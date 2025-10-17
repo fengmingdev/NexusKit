@@ -252,25 +252,33 @@ NexusKit 采用分层、模块化架构：
 
 ## 🎯 Roadmap
 
-### v1.0.0 (Current)
+### v0.1.0 (已完成 ✅)
 - ✅ Core architecture
-- ✅ TCP protocol support
-- ✅ WebSocket support
-- ✅ Middleware system
-- ✅ Connection pooling
-- ✅ Auto-reconnection
+- ✅ TCP protocol support (基于 Network framework)
+- ✅ 完整的中间件系统
+- ✅ 4 个生产级中间件（日志、压缩、加密、监控）
+- ✅ Auto-reconnection (4种策略)
+- ✅ 高性能工具（UnfairLock、Atomic）
 
-### v1.1.0 (Planned)
+### v0.2.0 (进行中 🚧)
+- ✅ WebSocket support (完成)
 - 🔲 Socket.IO full support
-- 🔲 Advanced metrics
-- 🔲 Performance optimizations
-- 🔲 More built-in middlewares
+- 🔲 单元测试
+- 🔲 集成测试
 
-### v2.0.0 (Future)
-- 🔲 UDP support
-- 🔲 HTTP/2 and HTTP/3
-- 🔲 Combine integration
-- 🔲 SwiftUI helpers
+### v0.3.0 (计划中 📅)
+- 🔲 Connection pooling
+- 🔲 Advanced security module
+- 🔲 Performance benchmarks
+- 🔲 更多协议支持（MQTT、gRPC）
+
+### v1.0.0 (目标 🎯)
+- 🔲 生产级稳定性
+- 🔲 完整文档
+- 🔲 CI/CD
+- 🔲 正式发布
+
+详细路线图请查看 [ROADMAP.md](ROADMAP.md)
 
 ---
 
