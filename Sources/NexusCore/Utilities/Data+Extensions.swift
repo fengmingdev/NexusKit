@@ -6,6 +6,9 @@
 //
 
 import Foundation
+#if canImport(Compression)
+import Compression
+#endif
 
 // MARK: - Data Extensions
 
@@ -36,6 +39,25 @@ public extension Data {
     }
 
     // MARK: - Big Endian Integer Reading
+
+    /// 读取大端序整数（泛型版本）
+    /// - Parameter offset: 偏移量
+    /// - Returns: 读取的值
+    /// - Throws: 如果数据不足则抛出错误
+    func readBigEndian<T: FixedWidthInteger>(at offset: Int) throws -> T {
+        let size = MemoryLayout<T>.size
+        guard offset + size <= count else {
+            throw NexusError.invalidMessageFormat(reason: "Data too short to read \(T.self) at offset \(offset)")
+        }
+
+        return try withUnsafeBytes { bufferPtr -> T in
+            guard let bytes = bufferPtr.baseAddress?.advanced(by: offset) else {
+                throw NexusError.invalidMessageFormat(reason: "Failed to get bytes pointer")
+            }
+            let value = bytes.load(as: T.self)
+            return T(bigEndian: value)
+        }
+    }
 
     /// 读取大端序 UInt32
     /// - Parameter offset: 偏移量
@@ -93,9 +115,12 @@ public extension Data {
 
     /// 从十六进制字符串创建 Data
     /// - Parameter hexString: 十六进制字符串
-    init?(hexString: String) {
+    /// - Throws: 如果字符串格式无效则抛出错误
+    init(hexString: String) throws {
         let cleanedString = hexString.replacingOccurrences(of: " ", with: "")
-        guard cleanedString.count % 2 == 0 else { return nil }
+        guard cleanedString.count % 2 == 0 else {
+            throw NexusError.invalidMessageFormat(reason: "Hex string must have even length")
+        }
 
         var data = Data(capacity: cleanedString.count / 2)
 
@@ -104,7 +129,9 @@ public extension Data {
             let nextIndex = cleanedString.index(index, offsetBy: 2)
             let byteString = cleanedString[index..<nextIndex]
 
-            guard let byte = UInt8(byteString, radix: 16) else { return nil }
+            guard let byte = UInt8(byteString, radix: 16) else {
+                throw NexusError.invalidMessageFormat(reason: "Invalid hex character in string")
+            }
             data.append(byte)
 
             index = nextIndex
@@ -116,8 +143,6 @@ public extension Data {
     // MARK: - Compression (requires Compression framework)
 
     #if canImport(Compression)
-    import Compression
-
     /// GZIP 压缩
     /// - Returns: 压缩后的数据
     /// - Throws: 压缩失败
@@ -125,11 +150,25 @@ public extension Data {
         try compressed(using: COMPRESSION_ZLIB)
     }
 
+    /// GZIP 压缩（别名）
+    /// - Returns: 压缩后的数据
+    /// - Throws: 压缩失败
+    func gzipCompressed() throws -> Data {
+        try gzipped()
+    }
+
     /// GZIP 解压缩
     /// - Returns: 解压后的数据
     /// - Throws: 解压失败
     func gunzipped() throws -> Data {
         try decompressed(using: COMPRESSION_ZLIB)
+    }
+
+    /// GZIP 解压缩（别名）
+    /// - Returns: 解压后的数据
+    /// - Throws: 解压失败
+    func gzipDecompressed() throws -> Data {
+        try gunzipped()
     }
 
     /// 使用指定算法压缩
@@ -201,7 +240,9 @@ public extension Data {
     /// - Parameter range: 范围
     /// - Returns: 子数据
     func safeSubdata(in range: Range<Int>) -> Data {
-        let safeRange = max(0, range.lowerBound)..<min(count, range.upperBound)
+        let safeLower = Swift.max(0, range.lowerBound)
+        let safeUpper = Swift.min(count, range.upperBound)
+        let safeRange = safeLower..<safeUpper
         guard !safeRange.isEmpty else { return Data() }
         return subdata(in: safeRange)
     }

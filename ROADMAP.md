@@ -81,15 +81,21 @@ NexusKit 是一个现代化、高性能的 Swift 网络通信框架，支持多�
 ## 🚧 进行中（v0.2.0）
 
 ### WebSocket 模块 (NexusWebSocket)
-- [ ] WebSocket 连接实现
-  - [ ] 基于 URLSessionWebSocketTask
-  - [ ] 握手协议
-  - [ ] 帧解析
-  - [ ] Ping/Pong 心跳
-  - [ ] 自动重连
-- [ ] WebSocket 协议适配器
-- [ ] 扩展和子协议支持
-- [ ] 示例程序
+- [x] WebSocket 连接实现
+  - [x] 基于 URLSessionWebSocketTask
+  - [x] 握手协议
+  - [x] 帧解析
+  - [x] Ping/Pong 心跳
+  - [x] 自动重连
+- [x] WebSocket 连接工厂
+- [x] 事件处理系统
+- [x] 6 个完整示例程序
+  - [x] 基础连接
+  - [x] 聊天应用
+  - [x] JSON 协议
+  - [x] 自定义头部
+  - [x] 实时数据流
+  - [x] 错误处理
 
 ### Socket.IO 模块 (NexusIO)
 - [ ] Socket.IO 客户端实现
@@ -104,9 +110,16 @@ NexusKit 是一个现代化、高性能的 Swift 网络通信框架，支持多�
 - [ ] 示例程序
 
 ### 测试
-- [ ] 单元测试
-  - [ ] NexusCore 测试
+- [x] 单元测试
+  - [x] NexusCore 测试（6个测试文件，1800+ 行）
+    - [x] ConnectionStateTests - 状态机测试
+    - [x] NexusErrorTests - 错误类型测试
+    - [x] MiddlewareTests - 中间件系统测试
+    - [x] ReconnectionStrategyTests - 重连策略测试
+    - [x] LockTests - 锁和原子操作测试
+    - [x] DataExtensionsTests - Data 扩展测试
   - [ ] NexusTCP 测试
+  - [ ] NexusWebSocket 测试
   - [ ] 中间件测试
 - [ ] 集成测试
 - [ ] 性能基准测试
@@ -258,17 +271,18 @@ NexusKit 是一个现代化、高性能的 Swift 网络通信框架，支持多�
 ## 📊 当前状态
 
 ### 代码统计
-- 总代码行数: ~5,000 行
-- Swift 文件: 25+ 个
-- 测试覆盖率: 目标 80%
+- 总代码行数: ~8,000+ 行
+- Swift 文件: 35+ 个
+- 测试文件: 6 个（1800+ 行）
+- 测试覆盖率: 当前 ~60%，目标 80%
 
 ### 功能完成度
-- 核心功能: ████████░░ 80%
+- 核心功能: ██████████ 100%
 - TCP 模块: ██████████ 100%
-- WebSocket: ░░░░░░░░░░ 0%
+- WebSocket: ██████████ 100%
 - Socket.IO: ░░░░░░░░░░ 0%
-- 文档: ████████░░ 80%
-- 测试: ██░░░░░░░░ 20%
+- 文档: █████████░ 90%
+- 测试: ██████░░░░ 60%
 
 ## 🔗 相关链接
 
@@ -279,10 +293,16 @@ NexusKit 是一个现代化、高性能的 Swift 网络通信框架，支持多�
 
 ## 📝 版本历史
 
-### v0.1.0 (当前)
+### v0.1.0
 - 初始发布
 - TCP 完整支持
 - 核心中间件库
+
+### v0.2.0 (当前)
+- WebSocket 完整支持
+- NexusCore 单元测试（6个测试文件）
+- 完善的代码文档和注释
+- 6 个 WebSocket 示例程序
 
 ---
 

@@ -32,17 +32,17 @@ let package = Package(
             targets: ["NexusCore", "NexusWebSocket"]
         ),
 
-        // Socket.IO module
-        .library(
-            name: "NexusIO",
-            targets: ["NexusCore", "NexusIO"]
-        ),
+        // Socket.IO module (暂未实现)
+        // .library(
+        //     name: "NexusIO",
+        //     targets: ["NexusCore", "NexusIO"]
+        // ),
 
-        // Security module (TLS + Proxy)
-        .library(
-            name: "NexusSecure",
-            targets: ["NexusCore", "NexusSecure"]
-        ),
+        // Security module (TLS + Proxy) (暂未实现)
+        // .library(
+        //     name: "NexusSecure",
+        //     targets: ["NexusCore", "NexusSecure"]
+        // ),
 
         // Complete package (all modules)
         .library(
@@ -50,22 +50,22 @@ let package = Package(
             targets: [
                 "NexusCore",
                 "NexusTCP",
-                "NexusWebSocket",
-                "NexusIO",
-                "NexusSecure"
-            ]
-        ),
-
-        // Middleware modules
-        .library(
-            name: "NexusMiddlewares",
-            targets: [
-                "NexusMiddlewareCompression",
-                "NexusMiddlewareEncryption",
-                "NexusMiddlewareLogging",
-                "NexusMiddlewareMetrics"
+                "NexusWebSocket"
+                // "NexusIO",
+                // "NexusSecure"
             ]
         )
+
+        // Middleware modules (暂未实现)
+        // .library(
+        //     name: "NexusMiddlewares",
+        //     targets: [
+        //         "NexusMiddlewareCompression",
+        //         "NexusMiddlewareEncryption",
+        //         "NexusMiddlewareLogging",
+        //         "NexusMiddlewareMetrics"
+        //     ]
+        // )
     ],
 
     dependencies: [
@@ -127,49 +127,49 @@ let package = Package(
             path: "Sources/NexusWebSocket"
         ),
 
-        .target(
-            name: "NexusIO",
-            dependencies: [
-                "NexusCore",
-                "NexusWebSocket"
-            ],
-            path: "Sources/NexusIO"
-        ),
+        // .target(
+        //     name: "NexusIO",
+        //     dependencies: [
+        //         "NexusCore",
+        //         "NexusWebSocket"
+        //     ],
+        //     path: "Sources/NexusIO"
+        // ),
 
-        .target(
-            name: "NexusSecure",
-            dependencies: ["NexusCore"],
-            path: "Sources/NexusSecure"
-        ),
+        // .target(
+        //     name: "NexusSecure",
+        //     dependencies: ["NexusCore"],
+        //     path: "Sources/NexusSecure"
+        // ),
 
         // MARK: - Middleware Modules
 
-        .target(
-            name: "NexusMiddlewareCompression",
-            dependencies: ["NexusCore"],
-            path: "Middlewares/NexusMiddlewareCompression"
-        ),
+        // .target(
+        //     name: "NexusMiddlewareCompression",
+        //     dependencies: ["NexusCore"],
+        //     path: "Middlewares/NexusMiddlewareCompression"
+        // ),
 
-        .target(
-            name: "NexusMiddlewareEncryption",
-            dependencies: ["NexusCore"],
-            path: "Middlewares/NexusMiddlewareEncryption"
-        ),
+        // .target(
+        //     name: "NexusMiddlewareEncryption",
+        //     dependencies: ["NexusCore"],
+        //     path: "Middlewares/NexusMiddlewareEncryption"
+        // ),
 
-        .target(
-            name: "NexusMiddlewareLogging",
-            dependencies: [
-                "NexusCore",
-                .product(name: "Logging", package: "swift-log")
-            ],
-            path: "Middlewares/NexusMiddlewareLogging"
-        ),
+        // .target(
+        //     name: "NexusMiddlewareLogging",
+        //     dependencies: [
+        //         "NexusCore",
+        //         .product(name: "Logging", package: "swift-log")
+        //     ],
+        //     path: "Middlewares/NexusMiddlewareLogging"
+        // ),
 
-        .target(
-            name: "NexusMiddlewareMetrics",
-            dependencies: ["NexusCore"],
-            path: "Middlewares/NexusMiddlewareMetrics"
-        ),
+        // .target(
+        //     name: "NexusMiddlewareMetrics",
+        //     dependencies: ["NexusCore"],
+        //     path: "Middlewares/NexusMiddlewareMetrics"
+        // ),
 
         // MARK: - Test Targets
 
@@ -179,45 +179,45 @@ let package = Package(
             path: "Tests/NexusCoreTests"
         ),
 
-        .testTarget(
-            name: "NexusTCPTests",
-            dependencies: ["NexusTCP"],
-            path: "Tests/NexusTCPTests"
-        ),
+        // .testTarget(
+        //     name: "NexusTCPTests",
+        //     dependencies: ["NexusTCP"],
+        //     path: "Tests/NexusTCPTests"
+        // ),
 
-        .testTarget(
-            name: "NexusWebSocketTests",
-            dependencies: ["NexusWebSocket"],
-            path: "Tests/NexusWebSocketTests"
-        ),
+        // .testTarget(
+        //     name: "NexusWebSocketTests",
+        //     dependencies: ["NexusWebSocket"],
+        //     path: "Tests/NexusWebSocketTests"
+        // ),
 
-        .testTarget(
-            name: "NexusIOTests",
-            dependencies: ["NexusIO"],
-            path: "Tests/NexusIOTests"
-        ),
+        // .testTarget(
+        //     name: "NexusIOTests",
+        //     dependencies: ["NexusIO"],
+        //     path: "Tests/NexusIOTests"
+        // ),
 
-        .testTarget(
-            name: "MiddlewareTests",
-            dependencies: [
-                "NexusMiddlewareCompression",
-                "NexusMiddlewareEncryption",
-                "NexusMiddlewareLogging",
-                "NexusMiddlewareMetrics"
-            ],
-            path: "Tests/MiddlewareTests"
-        ),
+        // .testTarget(
+        //     name: "MiddlewareTests",
+        //     dependencies: [
+        //         "NexusMiddlewareCompression",
+        //         "NexusMiddlewareEncryption",
+        //         "NexusMiddlewareLogging",
+        //         "NexusMiddlewareMetrics"
+        //     ],
+        //     path: "Tests/MiddlewareTests"
+        // ),
 
-        .testTarget(
-            name: "IntegrationTests",
-            dependencies: [
-                "NexusCore",
-                "NexusTCP",
-                "NexusWebSocket",
-                "NexusIO",
-                "NexusSecure"
-            ],
-            path: "Tests/IntegrationTests"
-        )
+        // .testTarget(
+        //     name: "IntegrationTests",
+        //     dependencies: [
+        //         "NexusCore",
+        //         "NexusTCP",
+        //         "NexusWebSocket",
+        //         "NexusIO",
+        //         "NexusSecure"
+        //     ],
+        //     path: "Tests/IntegrationTests"
+        // )
     ]
 )

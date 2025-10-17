@@ -46,10 +46,10 @@ public enum NexusError: Error, LocalizedError, Equatable {
     case protocolError(message: String)
 
     /// 无效的消息格式
-    case invalidMessageFormat
+    case invalidMessageFormat(reason: String)
 
     /// 不支持的协议版本
-    case unsupportedProtocolVersion
+    case unsupportedProtocolVersion(version: String)
 
     /// 编码失败
     case encodingFailed(Error)
@@ -153,11 +153,11 @@ public enum NexusError: Error, LocalizedError, Equatable {
         case .protocolError(let message):
             return "Protocol error: \(message)"
 
-        case .invalidMessageFormat:
-            return "Invalid message format"
+        case .invalidMessageFormat(let reason):
+            return "Invalid message format: \(reason)"
 
-        case .unsupportedProtocolVersion:
-            return "Unsupported protocol version"
+        case .unsupportedProtocolVersion(let version):
+            return "Unsupported protocol version: \(version)"
 
         case .encodingFailed(let error):
             return "Message encoding failed: \(error.localizedDescription)"
@@ -234,8 +234,6 @@ public enum NexusError: Error, LocalizedError, Equatable {
              (.connectionClosed, .connectionClosed),
              (.certificateValidationFailed, .certificateValidationFailed),
              (.invalidCredentials, .invalidCredentials),
-             (.invalidMessageFormat, .invalidMessageFormat),
-             (.unsupportedProtocolVersion, .unsupportedProtocolVersion),
              (.requestTimeout, .requestTimeout),
              (.invalidResponse, .invalidResponse),
              (.bufferOverflow, .bufferOverflow),
@@ -245,6 +243,10 @@ public enum NexusError: Error, LocalizedError, Equatable {
              (.poolExhausted, .poolExhausted),
              (.poolClosed, .poolClosed):
             return true
+
+        case (.invalidMessageFormat(let lhsReason), .invalidMessageFormat(let rhsReason)),
+             (.unsupportedProtocolVersion(let lhsReason), .unsupportedProtocolVersion(let rhsReason)):
+            return lhsReason == rhsReason
 
         case (.connectionAlreadyExists(let lhsId), .connectionAlreadyExists(let rhsId)),
              (.connectionNotFound(let lhsId), .connectionNotFound(let rhsId)):

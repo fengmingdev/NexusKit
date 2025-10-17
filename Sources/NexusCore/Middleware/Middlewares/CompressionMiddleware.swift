@@ -80,7 +80,7 @@ public struct CompressionMiddleware: Middleware {
     // MARK: - Algorithm
 
     /// 压缩算法
-    public enum Algorithm {
+    public enum Algorithm: Sendable {
         case gzip
         case lz4
         case lzma
@@ -315,7 +315,7 @@ public struct CompressionMiddleware: Middleware {
         print("⚠️ Compression is not available on this platform")
     }
 
-    public enum Algorithm {
+    public enum Algorithm: Sendable {
         case gzip
         case lz4
         case lzma

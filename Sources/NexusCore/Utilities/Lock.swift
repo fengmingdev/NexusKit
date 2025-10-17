@@ -179,7 +179,8 @@ public final class AtomicCounter: @unchecked Sendable {
 
 /// 读写锁（多读单写）
 public final class ReadWriteLock: @unchecked Sendable {
-    private var lock = pthread_rwlock_t()
+    @usableFromInline
+    internal var lock = pthread_rwlock_t()
 
     public init() {
         pthread_rwlock_init(&lock, nil)

@@ -223,13 +223,13 @@ public struct MiddlewareContext: Sendable {
     /// 自定义元数据
     ///
     /// 用于在中间件之间传递额外信息
-    public var metadata: [String: Any] = [:]
+    public var metadata: [String: String] = [:]
 
     public init(
         connectionId: String,
         endpoint: Endpoint,
         timestamp: Date = Date(),
-        metadata: [String: Any] = [:]
+        metadata: [String: String] = [:]
     ) {
         self.connectionId = connectionId
         self.endpoint = endpoint

@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [macos-14, macos-13]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Select Xcode
+      run: sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
+
+    - name: Show Xcode version
+      run: xcodebuild -version
+
+    - name: Show Swift version
+      run: swift --version
+
+    - name: Build
+      run: swift build -v
+
+    - name: Run tests
+      run: swift test -v --enable-code-coverage
+
+    - name: Generate code coverage
+      run: |
+        xcrun llvm-cov export -format="lcov" \
+          .build/debug/NexusKitPackageTests.xctest/Contents/MacOS/NexusKitPackageTests \
+          -instr-profile .build/debug/codecov/default.profdata > coverage.lcov
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage.lcov
+        fail_ci_if_error: false
+
+  lint:
+    name: SwiftLint
+    runs-on: macos-14
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: SwiftLint
+      run: |
+        if which swiftlint >/dev/null; then
+          swiftlint --strict
+        else
+          echo "SwiftLint not installed, skipping..."
+        fi
+
+  build-examples:
+    name: Build Examples
+    runs-on: macos-14
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Select Xcode
+      run: sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
+
+    - name: Build BasicTCP Example
+      run: swift build --package-path Examples/BasicTCP
+      continue-on-error: true
+
+    - name: Build WebSocket Example
+      run: swift build --package-path Examples/WebSocket
+      continue-on-error: true
+
+  cocoapods:
+    name: Validate CocoaPods
+    runs-on: macos-14
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install CocoaPods
+      run: gem install cocoapods
+
+    - name: Validate Podspec
+      run: pod spec lint NexusKit.podspec --allow-warnings
+      continue-on-error: true

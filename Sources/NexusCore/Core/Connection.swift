@@ -7,6 +7,25 @@
 
 import Foundation
 
+// MARK: - Connection Event
+
+/// 连接事件类型
+///
+/// 定义连接可以发出的事件类型，用于事件处理器系统。
+public enum ConnectionEvent: Sendable, Hashable {
+    /// 普通消息事件
+    case message
+
+    /// 服务器推送通知事件
+    case notification
+
+    /// 控制消息事件（心跳等）
+    case control
+
+    /// 自定义事件
+    case custom(String)
+}
+
 // MARK: - Connection Protocol
 
 /// 连接协议 - 定义所有连接类型的通用接口
