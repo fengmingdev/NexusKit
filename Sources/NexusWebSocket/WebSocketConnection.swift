@@ -95,7 +95,7 @@ public actor WebSocketConnection: Connection {
         self.endpoint = endpoint
         self.configuration = configuration
         self.lifecycleHooks = configuration.lifecycleHooks
-        self.middlewarePipeline = MiddlewarePipeline(middlewares: configuration.middlewares)
+        self.middlewarePipeline = MiddlewarePipeline()
 
         // 配置 URLSession
         let sessionConfig = URLSessionConfiguration.default
@@ -112,12 +112,14 @@ public actor WebSocketConnection: Connection {
     // MARK: - Connection Protocol
 
     public var state: ConnectionState {
-        _state
+        get async {
+            _state
+        }
     }
 
     public func connect() async throws {
         guard _state == .disconnected || _state == .reconnecting(attempt: 0) else {
-            throw NexusError.invalidStateTransition(from: _state, to: .connecting)
+            throw NexusError.invalidStateTransition(from: "\(_state)", to: "connecting")
         }
 
         _state = .connecting
@@ -178,7 +180,6 @@ public actor WebSocketConnection: Connection {
         guard _state != .disconnected else { return }
 
         _state = .disconnecting
-        await lifecycleHooks.onDisconnecting?()
 
         // 停止 Ping
         stopPing()
@@ -189,11 +190,17 @@ public actor WebSocketConnection: Connection {
             .normalClosure
         case .serverInitiated:
             .goingAway
-        case .timeout:
+        case .timeout, .heartbeatTimeout:
             .protocolError
-        case .error:
+        case .networkError:
             .internalServerError
-        default:
+        case .authenticationFailed:
+            .policyViolation
+        case .protocolError:
+            .protocolError
+        case .applicationTerminating:
+            .goingAway
+        case .custom:
             .abnormalClosure
         }
 
@@ -225,7 +232,7 @@ public actor WebSocketConnection: Connection {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             task.send(message) { error in
                 if let error = error {
-                    continuation.resume(throwing: NexusError.sendFailed(reason: error.localizedDescription))
+                    continuation.resume(throwing: NexusError.sendFailed(error))
                 } else {
                     continuation.resume()
                 }
@@ -240,7 +247,7 @@ public actor WebSocketConnection: Connection {
             throw NexusError.noProtocolAdapter
         }
 
-        let context = EncodingContext(connectionId: id, endpoint: endpoint)
+        let context = EncodingContext(connectionId: id)
         let data = try adapter.encode(message, context: context)
         try await send(data, timeout: timeout)
     }
@@ -253,7 +260,7 @@ public actor WebSocketConnection: Connection {
         throw NexusError.unsupportedOperation(operation: "receive", reason: "Use event handlers for WebSocket")
     }
 
-    public func on(_ event: ConnectionEvent, handler: @escaping (Data) async -> Void) {
+    public func on(_ event: ConnectionEvent, handler: @escaping (Data) async -> Void) async {
         if eventHandlers[event] == nil {
             eventHandlers[event] = []
         }
@@ -278,7 +285,7 @@ public actor WebSocketConnection: Connection {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             task.send(message) { error in
                 if let error = error {
-                    continuation.resume(throwing: NexusError.sendFailed(reason: error.localizedDescription))
+                    continuation.resume(throwing: NexusError.sendFailed(error))
                 } else {
                     continuation.resume()
                 }
@@ -289,7 +296,7 @@ public actor WebSocketConnection: Connection {
     /// 发送 Ping 帧
     public func sendPing() async throws {
         guard let task = webSocketTask else {
-            throw NexusError.notConnected
+            throw NexusError.connectionClosed
         }
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -313,7 +320,7 @@ public actor WebSocketConnection: Connection {
         if let task = webSocketTask, task.state == .running {
             return
         } else {
-            throw NexusError.connectionFailed(reason: "WebSocket task not running")
+            throw NexusError.protocolError(message: "WebSocket task not running")
         }
     }
 
@@ -379,17 +386,21 @@ public actor WebSocketConnection: Connection {
 
     private func handleProtocolEvent(_ event: ProtocolEvent) async {
         switch event {
-        case .response(let data):
+        case .response(id: _, data: let data):
             await dispatchEvent(.message, data: data)
 
-        case .notification(let data):
+        case .notification(event: _, data: let data):
             await dispatchEvent(.notification, data: data)
 
-        case .control(let type, let data):
-            if type == "pong" {
+        case .control(type: let type, data: let data):
+            if case .pong = type {
                 // Pong 响应，连接正常
             }
-            await dispatchEvent(.control, data: data)
+            await dispatchEvent(.control, data: data ?? Data())
+
+        case .error(let error):
+            // 处理错误事件
+            await lifecycleHooks.onError?(error)
         }
     }
 
@@ -430,7 +441,7 @@ public actor WebSocketConnection: Connection {
         _state = .disconnected
 
         let reason: DisconnectReason = if let error = error {
-            .error(error)
+            .networkError(error)
         } else {
             .clientInitiated
         }

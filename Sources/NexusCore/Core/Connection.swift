@@ -29,6 +29,7 @@ public enum ConnectionEvent: Sendable, Hashable {
 // MARK: - Connection Protocol
 
 /// 连接协议 - 定义所有连接类型的通用接口
+@preconcurrency
 ///
 /// `Connection` 协议是 NexusKit 的核心抽象，定义了所有网络连接的基本操作。
 /// 所有具体的连接实现（TCP、WebSocket、Socket.IO 等）都必须遵循此协议。
@@ -269,7 +270,7 @@ public protocol Connection: AnyObject, Sendable {
     /// - 可以为同一事件注册多个处理器
     /// - 处理器按注册顺序依次执行
     /// - 处理器在内部队列中异步执行，不会阻塞连接
-    func on(_ event: ConnectionEvent, handler: @escaping (Data) async -> Void)
+    func on(_ event: ConnectionEvent, handler: @escaping (Data) async -> Void) async
 }
 
 // MARK: - Lifecycle Hooks

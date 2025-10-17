@@ -23,6 +23,12 @@ public enum NexusError: Error, LocalizedError, Equatable {
     /// 连接已断开
     case connectionClosed
 
+    /// 未连接
+    case notConnected
+
+    /// 心跳超时
+    case heartbeatTimeout
+
     /// 连接已存在
     case connectionAlreadyExists(id: String)
 
@@ -98,6 +104,15 @@ public enum NexusError: Error, LocalizedError, Equatable {
     /// 缺少必需的配置
     case missingRequiredConfiguration(key: String)
 
+    /// 无效的端点
+    case invalidEndpoint(Endpoint)
+
+    /// 没有协议适配器
+    case noProtocolAdapter
+
+    /// 不支持的操作
+    case unsupportedOperation(operation: String, reason: String)
+
     // MARK: - Middleware Errors
 
     /// 中间件错误
@@ -134,6 +149,12 @@ public enum NexusError: Error, LocalizedError, Equatable {
 
         case .connectionClosed:
             return "Connection has been closed"
+
+        case .notConnected:
+            return "Not connected"
+
+        case .heartbeatTimeout:
+            return "Heartbeat timeout"
 
         case .connectionAlreadyExists(let id):
             return "Connection with id '\(id)' already exists"
@@ -204,6 +225,15 @@ public enum NexusError: Error, LocalizedError, Equatable {
         case .missingRequiredConfiguration(let key):
             return "Missing required configuration: \(key)"
 
+        case .invalidEndpoint(let endpoint):
+            return "Invalid endpoint: \(endpoint)"
+
+        case .noProtocolAdapter:
+            return "No protocol adapter configured"
+
+        case .unsupportedOperation(let operation, let reason):
+            return "Unsupported operation '\(operation)': \(reason)"
+
         case .middlewareError(let name, let error):
             return "Middleware '\(name)' error: \(error.localizedDescription)"
 
@@ -232,6 +262,8 @@ public enum NexusError: Error, LocalizedError, Equatable {
              (.connectionRefused, .connectionRefused),
              (.networkUnreachable, .networkUnreachable),
              (.connectionClosed, .connectionClosed),
+             (.notConnected, .notConnected),
+             (.heartbeatTimeout, .heartbeatTimeout),
              (.certificateValidationFailed, .certificateValidationFailed),
              (.invalidCredentials, .invalidCredentials),
              (.requestTimeout, .requestTimeout),
@@ -239,6 +271,7 @@ public enum NexusError: Error, LocalizedError, Equatable {
              (.bufferOverflow, .bufferOverflow),
              (.resourceExhausted, .resourceExhausted),
              (.outOfMemory, .outOfMemory),
+             (.noProtocolAdapter, .noProtocolAdapter),
              (.middlewareChainBroken, .middlewareChainBroken),
              (.poolExhausted, .poolExhausted),
              (.poolClosed, .poolClosed):
@@ -265,6 +298,9 @@ public enum NexusError: Error, LocalizedError, Equatable {
 
         case (.operationNotAllowed(let lhsState), .operationNotAllowed(let rhsState)):
             return lhsState == rhsState
+
+        case (.unsupportedOperation(let lhsOp, let lhsReason), .unsupportedOperation(let rhsOp, let rhsReason)):
+            return lhsOp == rhsOp && lhsReason == rhsReason
 
         case (.middlewareError(let lhsName, _), .middlewareError(let rhsName, _)):
             return lhsName == rhsName

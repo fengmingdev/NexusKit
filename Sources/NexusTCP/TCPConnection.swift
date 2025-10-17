@@ -14,7 +14,7 @@ import NexusCore
 // MARK: - TCP Connection
 
 /// TCP 连接实现（基于 Network framework）
-public actor TCPConnection: Connection {
+public actor TCPConnection: @preconcurrency Connection {
     // MARK: - Properties
 
     public let id: String
@@ -68,18 +68,20 @@ public actor TCPConnection: Connection {
         self.endpoint = endpoint
         self.configuration = configuration
         self.lifecycleHooks = configuration.lifecycleHooks
-        self.middlewarePipeline = MiddlewarePipeline(middlewares: configuration.middlewares)
+        self.middlewarePipeline = MiddlewarePipeline()
     }
 
     // MARK: - Connection Protocol
 
     public var state: ConnectionState {
-        _state
+        get async {
+            _state
+        }
     }
 
     public func connect() async throws {
         guard _state == .disconnected || _state == .reconnecting(attempt: 0) else {
-            throw NexusError.invalidStateTransition(from: _state, to: .connecting)
+            throw NexusError.invalidStateTransition(from: "\(_state)", to: "connecting")
         }
 
         _state = .connecting
@@ -160,7 +162,6 @@ public actor TCPConnection: Connection {
         guard _state != .disconnected else { return }
 
         _state = .disconnecting
-        await lifecycleHooks.onDisconnecting?()
 
         // 停止心跳
         stopHeartbeat()
@@ -198,7 +199,7 @@ public actor TCPConnection: Connection {
                 content: processedData,
                 completion: .contentProcessed { error in
                     if let error = error {
-                        continuation.resume(throwing: NexusError.sendFailed(reason: error.localizedDescription))
+                        continuation.resume(throwing: NexusError.sendFailed(error))
                     } else {
                         continuation.resume()
                     }
@@ -214,7 +215,7 @@ public actor TCPConnection: Connection {
             throw NexusError.noProtocolAdapter
         }
 
-        let context = EncodingContext(connectionId: id, endpoint: endpoint)
+        let context = EncodingContext(connectionId: id)
         let data = try adapter.encode(message, context: context)
         try await send(data, timeout: timeout)
     }
@@ -228,7 +229,7 @@ public actor TCPConnection: Connection {
         throw NexusError.unsupportedOperation(operation: "receive", reason: "Use event handlers for TCP")
     }
 
-    public func on(_ event: ConnectionEvent, handler: @escaping (Data) async -> Void) {
+    public func on(_ event: ConnectionEvent, handler: @escaping (Data) async -> Void) async {
         if eventHandlers[event] == nil {
             eventHandlers[event] = []
         }
@@ -307,7 +308,7 @@ public actor TCPConnection: Connection {
         _state = .disconnected
 
         let reason: DisconnectReason = if let error = error {
-            .error(error)
+            .networkError(error)
         } else {
             .clientInitiated
         }
@@ -405,17 +406,21 @@ public actor TCPConnection: Connection {
 
     private func handleProtocolEvent(_ event: ProtocolEvent) async {
         switch event {
-        case .response(let data):
+        case .response(id: _, data: let data):
             await dispatchEvent(.message, data: data)
 
-        case .notification(let data):
+        case .notification(event: _, data: let data):
             await dispatchEvent(.notification, data: data)
 
-        case .control(let type, let data):
-            if type == "heartbeat" {
+        case .control(type: let type, data: let data):
+            if case .heartbeat = type {
                 await handleHeartbeatResponse()
             }
-            await dispatchEvent(.control, data: data)
+            await dispatchEvent(.control, data: data ?? Data())
+
+        case .error(let error):
+            // 处理错误事件
+            await lifecycleHooks.onError?(error)
         }
     }
 
@@ -487,10 +492,10 @@ public actor TCPConnection: Connection {
 
 extension NWParameters {
     /// 从代理配置设置代理
-    fileprivate func setProxy(from config: ProxyConfiguration) {
+    fileprivate func setProxy(from config: NexusCore.ProxyConfiguration) {
         // SOCKS5 代理配置
         if config.type == .socks5 {
-            let proxyConfig = ProxyConfiguration.Dictionary()
+            var proxyConfig: [String: Any] = [:]
             proxyConfig[kCFProxyTypeKey as String] = kCFProxyTypeSOCKS as String
             proxyConfig[kCFProxyHostNameKey as String] = config.host
             proxyConfig[kCFProxyPortNumberKey as String] = config.port
@@ -507,10 +512,6 @@ extension NWParameters {
             // 这里仅作示例，实际需要通过系统设置或 NEProvider
         }
     }
-}
-
-extension ProxyConfiguration {
-    fileprivate typealias Dictionary = [String: Any]
 }
 
 // MARK: - Timeout Helper

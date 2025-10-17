@@ -118,13 +118,19 @@ NexusKit 是一个现代化、高性能的 Swift 网络通信框架，支持多�
     - [x] ReconnectionStrategyTests - 重连策略测试
     - [x] LockTests - 锁和原子操作测试
     - [x] DataExtensionsTests - Data 扩展测试
-  - [x] NexusTCP 测试（2个测试文件，1320+ 行）
-    - [x] TCPConnectionTests - 连接生命周期测试
-    - [x] BinaryProtocolAdapterTests - 协议编解码测试
+  - [x] NexusTCP 测试（2个测试文件，1320+ 行）✅
+    - [x] TCPConnectionTests - 连接生命周期测试（680+ 行）
+    - [x] BinaryProtocolAdapterTests - 协议编解码测试（640+ 行）
   - [ ] NexusWebSocket 测试
   - [ ] 中间件集成测试
 - [ ] 端到端集成测试
 - [ ] 性能基准测试
+
+### ⚠️ 已知问题
+- **Swift 6 Actor 隔离问题**: Connection 协议的 `on()` 方法与 actor 实现存在类型不匹配
+  - 原因：Swift 6 严格并发检查导致 actor-isolated async 方法类型与协议不同
+  - 影响：TCPConnection 和 WebSocketConnection 无法编译
+  - 解决方案：参见 `SWIFT6_MIGRATION.md`
 
 ## 📅 计划中（v0.3.0 及以后）
 
@@ -273,12 +279,12 @@ NexusKit 是一个现代化、高性能的 Swift 网络通信框架，支持多�
 ## 📊 当前状态
 
 ### 代码统计
-- 总代码行数: ~9,300+ 行
-- Swift 文件: 37+ 个
+- 总代码行数: ~10,500+ 行
+- Swift 文件: 39+ 个
 - 测试文件: 8 个（3,120+ 行）
   - NexusCore: 6 个文件（1,800+ 行）
   - NexusTCP: 2 个文件（1,320+ 行）
-- 测试覆盖率: 当前 ~65%，目标 80%
+- 测试覆盖率: 测试代码完成度 100%，等待编译问题修复后运行
 
 ### 功能完成度
 - 核心功能: ██████████ 100%
@@ -302,11 +308,13 @@ NexusKit 是一个现代化、高性能的 Swift 网络通信框架，支持多�
 - TCP 完整支持
 - 核心中间件库
 
-### v0.2.0 (当前)
-- WebSocket 完整支持
-- NexusCore 单元测试（6个测试文件）
-- 完善的代码文档和注释
-- 6 个 WebSocket 示例程序
+### v0.2.0 (当前) - 进行中
+- WebSocket 完整支持 ✅
+- NexusCore 单元测试（6个测试文件）✅
+- NexusTCP 单元测试（2个测试文件，1320+ 行）✅
+- 完善的代码文档和注释 ✅
+- 6 个 WebSocket 示例程序 ✅
+- ⚠️ 待修复：Swift 6 actor 隔离编译问题
 
 ---
 

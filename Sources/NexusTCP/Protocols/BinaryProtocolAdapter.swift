@@ -17,6 +17,9 @@ import NexusCore
 public final class BinaryProtocolAdapter: ProtocolAdapter, @unchecked Sendable {
     // MARK: - Properties
 
+    /// 协议名称
+    public let name: String = "BinaryProtocol"
+
     /// 协议标签（固定值 0x7A5A）
     private let protocolTag: UInt16 = 0x7A5A
 
@@ -151,15 +154,15 @@ public final class BinaryProtocolAdapter: ProtocolAdapter, @unchecked Sendable {
             if let callback = requestMap.popRequest(id: header.requestId) {
                 await callback(bodyData)
             }
-            events.append(.response(bodyData))
+            events.append(.response(id: "\(header.requestId)", data: bodyData))
 
         } else if header.isHeartbeat {
             // 心跳消息
-            events.append(.control("heartbeat", bodyData))
+            events.append(.control(type: .heartbeat, data: bodyData))
 
         } else {
             // 通知消息（服务器主动推送）
-            events.append(.notification(bodyData))
+            events.append(.notification(event: "\(header.functionId)", data: bodyData))
         }
 
         return events
