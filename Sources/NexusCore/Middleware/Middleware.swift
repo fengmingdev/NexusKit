@@ -9,44 +9,167 @@ import Foundation
 
 // MARK: - Middleware Protocol
 
-/// 中间件协议 - 处理消息的中间层
+/// 中间件协议 - 拦截和处理消息的中间层
+///
+/// `Middleware` 提供了一种可扩展的方式来处理连接中的数据流。
+/// 中间件可以用于日志记录、数据压缩、加密、性能监控等场景。
+///
+/// ## 设计模式
+///
+/// 中间件基于**管道模式**（Pipeline Pattern）：
+/// - **出站数据**: 按优先级顺序依次处理
+/// - **入站数据**: 按优先级逆序处理（先进后出）
+///
+/// ## 优先级
+///
+/// - 数字越小，优先级越高
+/// - 默认优先级为 100
+/// - 推荐范围：0-1000
+///
+/// ## 使用示例
+///
+/// ### 定义中间件
+/// ```swift
+/// struct LoggingMiddleware: Middleware {
+///     let name = "Logging"
+///     let priority = 10  // 高优先级，最先处理
+///
+///     func handleOutgoing(_ data: Data, context: MiddlewareContext) async throws -> Data {
+///         print("[发送] \(data.count) 字节")
+///         return data  // 不修改数据
+///     }
+///
+///     func handleIncoming(_ data: Data, context: MiddlewareContext) async throws -> Data {
+///         print("[接收] \(data.count) 字节")
+///         return data
+///     }
+/// }
+/// ```
+///
+/// ### 应用中间件
+/// ```swift
+/// let connection = try await NexusKit.shared
+///     .tcp(host: "example.com", port: 8080)
+///     .middleware(LoggingMiddleware())
+///     .middleware(CompressionMiddleware())
+///     .connect()
+/// ```
+///
+/// ### 处理顺序
+///
+/// 假设有两个中间件：
+/// - LoggingMiddleware (优先级 10)
+/// - CompressionMiddleware (优先级 20)
+///
+/// **发送流程**:
+/// ```
+/// 原始数据 → Logging → Compression → 网络
+/// ```
+///
+/// **接收流程**:
+/// ```
+/// 网络 → Compression → Logging → 应用
+/// ```
 public protocol Middleware: Sendable {
-    /// 中间件名称
+    /// 中间件唯一名称
+    ///
+    /// 用于标识和管理中间件。建议使用描述性名称。
     var name: String { get }
 
     /// 优先级（数字越小优先级越高）
+    ///
+    /// 默认值为 100。推荐范围：
+    /// - 0-50: 高优先级（日志、监控）
+    /// - 50-100: 中等优先级（压缩、加密）
+    /// - 100-200: 低优先级（自定义处理）
     var priority: Int { get }
 
     /// 处理出站数据（发送前）
+    ///
+    /// 在数据发送到网络之前调用。可以修改、记录或检查数据。
+    ///
     /// - Parameters:
     ///   - data: 原始数据
-    ///   - context: 中间件上下文
-    /// - Returns: 处理后的数据
-    /// - Throws: 处理失败时抛出错误
+    ///   - context: 中间件上下文（包含连接信息、方向、元数据等）
+    ///
+    /// - Returns: 处理后的数据。如果不需要修改，返回原数据
+    ///
+    /// - Throws: 处理失败时抛出错误，会被包装为 `NexusError.middlewareError`
+    ///
+    /// ## 示例
+    /// ```swift
+    /// func handleOutgoing(_ data: Data, context: MiddlewareContext) async throws -> Data {
+    ///     // 记录日志
+    ///     print("发送到 \(context.connectionId): \(data.count) 字节")
+    ///
+    ///     // 压缩数据（如果大于 1KB）
+    ///     if data.count > 1024 {
+    ///         return try data.gzipped()
+    ///     }
+    ///
+    ///     return data
+    /// }
+    /// ```
     func handleOutgoing(_ data: Data, context: MiddlewareContext) async throws -> Data
 
     /// 处理入站数据（接收后）
+    ///
+    /// 在从网络接收数据后调用。可以解密、解压或验证数据。
+    ///
     /// - Parameters:
-    ///   - data: 原始数据
+    ///   - data: 原始接收数据
     ///   - context: 中间件上下文
+    ///
     /// - Returns: 处理后的数据
+    ///
     /// - Throws: 处理失败时抛出错误
+    ///
+    /// ## 示例
+    /// ```swift
+    /// func handleIncoming(_ data: Data, context: MiddlewareContext) async throws -> Data {
+    ///     // 尝试解压缩
+    ///     if let decompressed = try? data.gunzipped() {
+    ///         print("解压: \(data.count) → \(decompressed.count) 字节")
+    ///         return decompressed
+    ///     }
+    ///
+    ///     return data
+    /// }
+    /// ```
     func handleIncoming(_ data: Data, context: MiddlewareContext) async throws -> Data
 
     /// 连接建立时调用
-    /// - Parameter connection: 连接对象
+    ///
+    /// 可用于初始化资源、记录连接事件等。
+    ///
+    /// - Parameter connection: 新建立的连接对象
+    ///
+    /// ## 注意
+    /// 默认实现为空，可选实现。
     func onConnect(connection: any Connection) async
 
     /// 连接断开时调用
+    ///
+    /// 可用于清理资源、记录断开事件等。
+    ///
     /// - Parameters:
-    ///   - connection: 连接对象
+    ///   - connection: 已断开的连接对象
     ///   - reason: 断开原因
+    ///
+    /// ## 注意
+    /// 默认实现为空，可选实现。
     func onDisconnect(connection: any Connection, reason: DisconnectReason) async
 
     /// 错误处理
+    ///
+    /// 当中间件处理过程中发生错误时调用。
+    ///
     /// - Parameters:
-    ///   - error: 错误
-    ///   - context: 上下文
+    ///   - error: 发生的错误
+    ///   - context: 错误发生时的上下文
+    ///
+    /// ## 注意
+    /// 默认实现为空，可选实现。可用于错误日志记录。
     func onError(error: Error, context: MiddlewareContext) async
 }
 
@@ -63,37 +186,53 @@ public extension Middleware {
 // MARK: - Middleware Context
 
 /// 中间件上下文
+///
+/// 提供中间件处理数据时所需的上下文信息。
+///
+/// ## 使用示例
+///
+/// ```swift
+/// struct MetricsMiddleware: Middleware {
+///     let name = "Metrics"
+///
+///     func handleOutgoing(_ data: Data, context: MiddlewareContext) async throws -> Data {
+///         // 使用上下文信息
+///         print("连接 \(context.connectionId)")
+///         print("端点: \(context.endpoint)")
+///         print("数据: \(data.count) 字节")
+///
+///         // 访问自定义元数据
+///         if let userId = context.metadata["userId"] {
+///             print("用户: \(userId)")
+///         }
+///
+///         return data
+///     }
+/// }
+/// ```
 public struct MiddlewareContext: Sendable {
-    /// 连接标识符
+    /// 连接唯一标识符
     public let connectionId: String
 
-    /// 方向
-    public let direction: Direction
-
-    /// 数据大小
-    public let dataSize: Int
+    /// 连接端点信息
+    public let endpoint: Endpoint
 
     /// 时间戳
     public let timestamp: Date
 
-    /// 元数据
-    public var metadata: [String: String]
-
-    public enum Direction: Sendable {
-        case outgoing  // 发送
-        case incoming  // 接收
-    }
+    /// 自定义元数据
+    ///
+    /// 用于在中间件之间传递额外信息
+    public var metadata: [String: Any] = [:]
 
     public init(
         connectionId: String,
-        direction: Direction,
-        dataSize: Int,
+        endpoint: Endpoint,
         timestamp: Date = Date(),
-        metadata: [String: String] = [:]
+        metadata: [String: Any] = [:]
     ) {
         self.connectionId = connectionId
-        self.direction = direction
-        self.dataSize = dataSize
+        self.endpoint = endpoint
         self.timestamp = timestamp
         self.metadata = metadata
     }
