@@ -29,7 +29,6 @@ public enum ConnectionEvent: Sendable, Hashable {
 // MARK: - Connection Protocol
 
 /// 连接协议 - 定义所有连接类型的通用接口
-@preconcurrency
 ///
 /// `Connection` 协议是 NexusKit 的核心抽象，定义了所有网络连接的基本操作。
 /// 所有具体的连接实现（TCP、WebSocket、Socket.IO 等）都必须遵循此协议。
@@ -236,41 +235,8 @@ public protocol Connection: AnyObject, Sendable {
     /// ```
     func receive<T: Decodable>(as type: T.Type, timeout: TimeInterval?) async throws -> T
 
-    /// 注册事件处理器
-    ///
-    /// 为特定事件类型注册处理闭包。当事件发生时，所有注册的处理器都会被调用。
-    ///
-    /// - Parameters:
-    ///   - event: 事件类型（`.message`、`.notification`、`.control`）
-    ///   - handler: 事件处理闭包，接收事件数据作为参数
-    ///
-    /// ## 事件类型
-    ///
-    /// - `.message`: 普通消息（请求-响应）
-    /// - `.notification`: 服务器推送通知
-    /// - `.control`: 控制消息（心跳等）
-    ///
-    /// ## 示例
-    /// ```swift
-    /// // 处理消息
-    /// await connection.on(.message) { data in
-    ///     print("收到消息: \(data.count) 字节")
-    /// }
-    ///
-    /// // 处理通知
-    /// await connection.on(.notification) { data in
-    ///     let decoder = JSONDecoder()
-    ///     if let notification = try? decoder.decode(Notification.self, from: data) {
-    ///         print("收到通知: \(notification.title)")
-    ///     }
-    /// }
-    /// ```
-    ///
-    /// ## 注意
-    /// - 可以为同一事件注册多个处理器
-    /// - 处理器按注册顺序依次执行
-    /// - 处理器在内部队列中异步执行，不会阻塞连接
-    func on(_ event: ConnectionEvent, handler: @escaping (Data) async -> Void) async
+    // 注意：`on(_:handler:)` 方法已从协议要求中移除，以绕过 Swift 6.1.2 编译器 bug
+    // 该方法仍在所有连接实现中可用。详见 SWIFT6_COMPILER_BUG.md
 }
 
 // MARK: - Lifecycle Hooks

@@ -53,12 +53,15 @@ import NexusCore
 ///     .connect()
 /// ```
 @available(iOS 13.0, macOS 10.15, *)
-public actor WebSocketConnection: Connection {
+public final class WebSocketConnection: Connection, @unchecked Sendable {
     // MARK: - Properties
 
     public let id: String
     private let endpoint: Endpoint
     private let configuration: WebSocketConfiguration
+
+    /// 线程安全锁
+    private let lock = UnfairLock()
 
     /// 内部状态
     private var _state: ConnectionState = .disconnected
@@ -82,7 +85,7 @@ public actor WebSocketConnection: Connection {
     private let middlewarePipeline: MiddlewarePipeline
 
     /// 事件处理器
-    private var eventHandlers: [ConnectionEvent: [(Data) async -> Void]] = [:]
+    private var eventHandlers: [ConnectionEvent: [@Sendable (Data) async -> Void]] = [:]
 
     // MARK: - Initialization
 
@@ -113,16 +116,27 @@ public actor WebSocketConnection: Connection {
 
     public var state: ConnectionState {
         get async {
-            _state
+            lock.withLock { _state }
         }
     }
 
+    /// 读取状态（线程安全）
+    private func getState() -> ConnectionState {
+        lock.withLock { _state }
+    }
+
+    /// 更新状态（线程安全）
+    private func setState(_ newState: ConnectionState) {
+        lock.withLock { _state = newState }
+    }
+
     public func connect() async throws {
-        guard _state == .disconnected || _state == .reconnecting(attempt: 0) else {
-            throw NexusError.invalidStateTransition(from: "\(_state)", to: "connecting")
+        let currentState = getState()
+        guard currentState == .disconnected || currentState == .reconnecting(attempt: 0) else {
+            throw NexusError.invalidStateTransition(from: "\(currentState)", to: "connecting")
         }
 
-        _state = .connecting
+        setState(.connecting)
         await lifecycleHooks.onConnecting?()
 
         // 解析端点
@@ -157,8 +171,8 @@ public actor WebSocketConnection: Connection {
         // 等待连接成功
         do {
             try await waitForConnection()
-            _state = .connected
-            reconnectionAttempt = 0
+            setState(.connected)
+            lock.withLock { reconnectionAttempt = 0 }
             await lifecycleHooks.onConnected?()
 
             // 启动 Ping
@@ -170,16 +184,16 @@ public actor WebSocketConnection: Connection {
             startReceiving()
 
         } catch {
-            _state = .disconnected
+            setState(.disconnected)
             webSocketTask?.cancel(with: .goingAway, reason: nil)
             throw error
         }
     }
 
     public func disconnect(reason: DisconnectReason) async {
-        guard _state != .disconnected else { return }
+        guard getState() != .disconnected else { return }
 
-        _state = .disconnecting
+        setState(.disconnecting)
 
         // 停止 Ping
         stopPing()
@@ -207,12 +221,12 @@ public actor WebSocketConnection: Connection {
         webSocketTask?.cancel(with: closeCode, reason: nil)
         webSocketTask = nil
 
-        _state = .disconnected
+        setState(.disconnected)
         await lifecycleHooks.onDisconnected?(reason)
     }
 
     public func send(_ data: Data, timeout: TimeInterval?) async throws {
-        guard _state == .connected else {
+        guard getState() == .connected else {
             throw NexusError.notConnected
         }
 
@@ -260,11 +274,20 @@ public actor WebSocketConnection: Connection {
         throw NexusError.unsupportedOperation(operation: "receive", reason: "Use event handlers for WebSocket")
     }
 
-    public func on(_ event: ConnectionEvent, handler: @escaping (Data) async -> Void) async {
-        if eventHandlers[event] == nil {
-            eventHandlers[event] = []
+    /// 注册事件处理器
+    ///
+    /// 为特定事件类型注册处理闭包。当事件发生时，所有注册的处理器都会被调用。
+    ///
+    /// - Parameters:
+    ///   - event: 事件类型（`.message`、`.notification`、`.control`）
+    ///   - handler: 事件处理闭包，接收事件数据作为参数
+    public func on(_ event: ConnectionEvent, handler: @escaping @Sendable (Data) async -> Void) {
+        lock.withLock {
+            if eventHandlers[event] == nil {
+                eventHandlers[event] = []
+            }
+            eventHandlers[event]?.append(handler)
         }
-        eventHandlers[event]?.append(handler)
     }
 
     // MARK: - WebSocket Specific
@@ -272,7 +295,7 @@ public actor WebSocketConnection: Connection {
     /// 发送文本消息
     /// - Parameter text: 文本内容
     public func sendText(_ text: String) async throws {
-        guard _state == .connected else {
+        guard getState() == .connected else {
             throw NexusError.notConnected
         }
 
@@ -326,7 +349,7 @@ public actor WebSocketConnection: Connection {
 
     private func startReceiving() {
         Task {
-            while !Task.isCancelled && _state == .connected {
+            while !Task.isCancelled && getState() == .connected {
                 await receiveNextMessage()
             }
         }
@@ -405,7 +428,8 @@ public actor WebSocketConnection: Connection {
     }
 
     private func dispatchEvent(_ event: ConnectionEvent, data: Data) async {
-        guard let handlers = eventHandlers[event] else { return }
+        let handlers = lock.withLock { eventHandlers[event] }
+        guard let handlers = handlers else { return }
 
         for handler in handlers {
             await handler(data)
@@ -413,7 +437,7 @@ public actor WebSocketConnection: Connection {
     }
 
     private func handleDisconnected(error: Error?) async {
-        let previousState = _state
+        let previousState = getState()
 
         // 检查是否需要重连
         if let error = error,
@@ -421,16 +445,19 @@ public actor WebSocketConnection: Connection {
            strategy.shouldReconnect(error: error),
            previousState == .connected || previousState.isReconnecting {
 
-            reconnectionAttempt += 1
+            let attempt = lock.withLock { () -> Int in
+                reconnectionAttempt += 1
+                return reconnectionAttempt
+            }
 
-            if let delay = strategy.nextDelay(attempt: reconnectionAttempt, lastError: error) {
-                _state = .reconnecting(attempt: reconnectionAttempt)
-                await lifecycleHooks.onReconnecting?(reconnectionAttempt)
+            if let delay = strategy.nextDelay(attempt: attempt, lastError: error) {
+                setState(.reconnecting(attempt: attempt))
+                await lifecycleHooks.onReconnecting?(attempt)
 
                 // 延迟后重连
                 try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
 
-                if _state.isReconnecting {
+                if getState().isReconnecting {
                     try? await connect()
                 }
                 return
@@ -438,7 +465,7 @@ public actor WebSocketConnection: Connection {
         }
 
         // 不重连，标记为断开
-        _state = .disconnected
+        setState(.disconnected)
 
         let reason: DisconnectReason = if let error = error {
             .networkError(error)
@@ -460,7 +487,7 @@ public actor WebSocketConnection: Connection {
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
 
-                if !Task.isCancelled && _state == .connected {
+                if !Task.isCancelled && getState() == .connected {
                     try? await sendPing()
                 }
             }

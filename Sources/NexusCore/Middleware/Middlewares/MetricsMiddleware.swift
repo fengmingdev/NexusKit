@@ -45,6 +45,14 @@ import Foundation
 /// let metrics = MetricsMiddleware(
 ///     reportInterval: 60.0  // 每 60 秒自动打印一次报告
 /// )
+/// 
+/// let connection = try await NexusKit.shared
+///     .tcp(host: "example.com", port: 8080)
+///     .middleware(metrics)
+///     .connect()
+/// 
+/// // 启动自动报告
+/// await metrics.startReporting()
 /// ```
 public actor MetricsMiddleware: Middleware {
     // MARK: - Properties
@@ -86,22 +94,28 @@ public actor MetricsMiddleware: Middleware {
     ///   - reportInterval: 自动报告间隔（秒），nil 表示不自动报告
     public init(reportInterval: TimeInterval? = nil) {
         self.reportInterval = reportInterval
-
-        if let interval = reportInterval {
-            self.reportTimer = Task {
-                while !Task.isCancelled {
-                    try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
-
-                    if !Task.isCancelled {
-                        await printReport()
-                    }
-                }
-            }
-        }
+        // reportTimer 将在 startReporting() 中初始化
     }
 
     deinit {
         reportTimer?.cancel()
+    }
+
+    /// 启动自动报告（需要在 actor 上下文中调用）
+    public func startReporting() {
+        guard let interval = reportInterval, reportTimer == nil else {
+            return
+        }
+
+        self.reportTimer = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+
+                if !Task.isCancelled {
+                    await printReport()
+                }
+            }
+        }
     }
 
     // MARK: - Middleware Protocol
@@ -166,7 +180,7 @@ public actor MetricsMiddleware: Middleware {
 
     // MARK: - Reporting
 
-    private func printReport() {
+    private func printReport() async {
         let summary = self.summary()
         let sinceLastReport = Date().timeIntervalSince(lastReportTime)
 
@@ -186,7 +200,7 @@ public actor MetricsMiddleware: Middleware {
         lastReportTime = Date()
     }
 
-    private func printFinalReport() {
+    private func printFinalReport() async {
         let summary = self.summary()
 
         print("\n📊 [Final Metrics Report]")

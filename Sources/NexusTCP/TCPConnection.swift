@@ -14,12 +14,15 @@ import NexusCore
 // MARK: - TCP Connection
 
 /// TCP 连接实现（基于 Network framework）
-public actor TCPConnection: @preconcurrency Connection {
+public final class TCPConnection: Connection, @unchecked Sendable {
     // MARK: - Properties
 
     public let id: String
     private let endpoint: Endpoint
     private let configuration: ConnectionConfiguration
+
+    /// 线程安全锁
+    private let lock = UnfairLock()
 
     /// 内部状态
     private var _state: ConnectionState = .disconnected
@@ -46,7 +49,7 @@ public actor TCPConnection: @preconcurrency Connection {
     private let middlewarePipeline: MiddlewarePipeline
 
     /// 事件处理器
-    private var eventHandlers: [ConnectionEvent: [(Data) async -> Void]] = [:]
+    private var eventHandlers: [ConnectionEvent: [@Sendable (Data) async -> Void]] = [:]
 
     /// 连接队列
     private let connectionQueue = DispatchQueue(
@@ -75,16 +78,27 @@ public actor TCPConnection: @preconcurrency Connection {
 
     public var state: ConnectionState {
         get async {
-            _state
+            lock.withLock { _state }
         }
     }
 
+    /// 读取状态（线程安全）
+    private func getState() -> ConnectionState {
+        lock.withLock { _state }
+    }
+
+    /// 更新状态（线程安全）
+    private func setState(_ newState: ConnectionState) {
+        lock.withLock { _state = newState }
+    }
+
     public func connect() async throws {
-        guard _state == .disconnected || _state == .reconnecting(attempt: 0) else {
-            throw NexusError.invalidStateTransition(from: "\(_state)", to: "connecting")
+        let currentState = getState()
+        guard currentState == .disconnected || currentState == .reconnecting(attempt: 0) else {
+            throw NexusError.invalidStateTransition(from: "\(currentState)", to: "connecting")
         }
 
-        _state = .connecting
+        setState(.connecting)
         await lifecycleHooks.onConnecting?()
 
         // 解析端点
@@ -148,20 +162,20 @@ public actor TCPConnection: @preconcurrency Connection {
 
         // 等待连接成功（使用超时）
         try await withTimeout(configuration.connectTimeout) {
-            while self._state == .connecting {
+            while self.getState() == .connecting {
                 try await Task.sleep(nanoseconds: 100_000_000) // 100ms
             }
 
-            if self._state != .connected {
+            if self.getState() != .connected {
                 throw NexusError.connectionTimeout
             }
         }
     }
 
     public func disconnect(reason: DisconnectReason) async {
-        guard _state != .disconnected else { return }
+        guard getState() != .disconnected else { return }
 
-        _state = .disconnecting
+        setState(.disconnecting)
 
         // 停止心跳
         stopHeartbeat()
@@ -170,16 +184,18 @@ public actor TCPConnection: @preconcurrency Connection {
         nwConnection?.cancel()
         nwConnection = nil
 
-        _state = .disconnected
+        setState(.disconnected)
         await lifecycleHooks.onDisconnected?(reason)
 
         // 清空缓冲区
-        receiveBuffer.removeAll()
-        isReceiving = false
+        lock.withLock {
+            receiveBuffer.removeAll()
+            isReceiving = false
+        }
     }
 
     public func send(_ data: Data, timeout: TimeInterval?) async throws {
-        guard _state == .connected else {
+        guard getState() == .connected else {
             throw NexusError.notConnected
         }
 
@@ -229,11 +245,20 @@ public actor TCPConnection: @preconcurrency Connection {
         throw NexusError.unsupportedOperation(operation: "receive", reason: "Use event handlers for TCP")
     }
 
-    public func on(_ event: ConnectionEvent, handler: @escaping (Data) async -> Void) async {
-        if eventHandlers[event] == nil {
-            eventHandlers[event] = []
+    /// 注册事件处理器
+    ///
+    /// 为特定事件类型注册处理闭包。当事件发生时，所有注册的处理器都会被调用。
+    ///
+    /// - Parameters:
+    ///   - event: 事件类型（`.message`、`.notification`、`.control`）
+    ///   - handler: 事件处理闭包，接收事件数据作为参数
+    public func on(_ event: ConnectionEvent, handler: @escaping @Sendable (Data) async -> Void) {
+        lock.withLock {
+            if eventHandlers[event] == nil {
+                eventHandlers[event] = []
+            }
+            eventHandlers[event]?.append(handler)
         }
-        eventHandlers[event]?.append(handler)
     }
 
     // MARK: - State Handling
@@ -241,8 +266,8 @@ public actor TCPConnection: @preconcurrency Connection {
     private func handleStateUpdate(_ state: NWConnection.State) async {
         switch state {
         case .ready:
-            _state = .connected
-            reconnectionAttempt = 0
+            setState(.connected)
+            lock.withLock { reconnectionAttempt = 0 }
             await lifecycleHooks.onConnected?()
 
             // 启动心跳
@@ -263,7 +288,7 @@ public actor TCPConnection: @preconcurrency Connection {
 
         case .cancelled:
             // 连接已取消
-            if _state != .disconnecting {
+            if getState() != .disconnecting {
                 await handleDisconnected(error: nil)
             }
 
@@ -277,10 +302,10 @@ public actor TCPConnection: @preconcurrency Connection {
     }
 
     private func handleDisconnected(error: Error?) async {
-        let previousState = _state
+        let previousState = getState()
 
         // 停止接收
-        isReceiving = false
+        lock.withLock { isReceiving = false }
 
         // 检查是否需要重连
         if let error = error,
@@ -288,16 +313,19 @@ public actor TCPConnection: @preconcurrency Connection {
            strategy.shouldReconnect(error: error),
            previousState == .connected || previousState.isReconnecting {
 
-            reconnectionAttempt += 1
+            let attempt = lock.withLock { () -> Int in
+                reconnectionAttempt += 1
+                return reconnectionAttempt
+            }
 
-            if let delay = strategy.nextDelay(attempt: reconnectionAttempt, lastError: error) {
-                _state = .reconnecting(attempt: reconnectionAttempt)
-                await lifecycleHooks.onReconnecting?(reconnectionAttempt)
+            if let delay = strategy.nextDelay(attempt: attempt, lastError: error) {
+                setState(.reconnecting(attempt: attempt))
+                await lifecycleHooks.onReconnecting?(attempt)
 
                 // 延迟后重连
                 try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
 
-                if _state.isReconnecting {
+                if getState().isReconnecting {
                     try? await connect()
                 }
                 return
@@ -305,7 +333,7 @@ public actor TCPConnection: @preconcurrency Connection {
         }
 
         // 不重连，标记为断开
-        _state = .disconnected
+        setState(.disconnected)
 
         let reason: DisconnectReason = if let error = error {
             .networkError(error)
@@ -319,9 +347,13 @@ public actor TCPConnection: @preconcurrency Connection {
     // MARK: - Data Receiving
 
     private func startReceiving() {
-        guard !isReceiving, let connection = nwConnection else { return }
+        let shouldReceive = lock.withLock { () -> Bool in
+            guard !isReceiving, nwConnection != nil else { return false }
+            isReceiving = true
+            return true
+        }
 
-        isReceiving = true
+        guard shouldReceive, let connection = nwConnection else { return }
 
         connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
             Task { [weak self] in
@@ -339,7 +371,7 @@ public actor TCPConnection: @preconcurrency Connection {
 
         // 处理数据
         if let data = data, !data.isEmpty {
-            receiveBuffer.append(data)
+            lock.withLock { receiveBuffer.append(data) }
             await parseMessages()
         }
 
@@ -357,23 +389,29 @@ public actor TCPConnection: @preconcurrency Connection {
 
     private func parseMessages() async {
         while true {
-            // 检查是否有完整的消息（至少 4 字节长度前缀）
-            guard receiveBuffer.count >= 4 else { break }
+            let messageData: Data? = lock.withLock {
+                // 检查是否有完整的消息（至少 4 字节长度前缀）
+                guard receiveBuffer.count >= 4 else { return nil }
 
-            // 读取消息长度（大端序）
-            guard let totalLength = receiveBuffer.readBigEndianUInt32(at: 0) else { break }
+                // 读取消息长度（大端序）
+                guard let totalLength = receiveBuffer.readBigEndianUInt32(at: 0) else { return nil }
 
-            // 检查是否接收到完整消息（4字节长度 + 实际消息）
-            guard receiveBuffer.count >= 4 + Int(totalLength) else { break }
+                // 检查是否接收到完整消息（4字节长度 + 实际消息）
+                guard receiveBuffer.count >= 4 + Int(totalLength) else { return nil }
 
-            // 提取消息数据（不包括长度前缀）
-            let messageData = receiveBuffer.subdata(in: 4..<(4 + Int(totalLength)))
+                // 提取消息数据（不包括长度前缀）
+                let data = receiveBuffer.subdata(in: 4..<(4 + Int(totalLength)))
 
-            // 从缓冲区移除已处理的消息
-            receiveBuffer.removeFirst(4 + Int(totalLength))
+                // 从缓冲区移除已处理的消息
+                receiveBuffer.removeFirst(4 + Int(totalLength))
+
+                return data
+            }
+
+            guard let data = messageData else { break }
 
             // 处理消息
-            await processMessage(messageData)
+            await processMessage(data)
         }
     }
 
@@ -425,7 +463,8 @@ public actor TCPConnection: @preconcurrency Connection {
     }
 
     private func dispatchEvent(_ event: ConnectionEvent, data: Data) async {
-        guard let handlers = eventHandlers[event] else { return }
+        let handlers = lock.withLock { eventHandlers[event] }
+        guard let handlers = handlers else { return }
 
         for handler in handlers {
             await handler(data)
@@ -466,7 +505,8 @@ public actor TCPConnection: @preconcurrency Connection {
 
         // 检查心跳超时
         let timeout = configuration.heartbeatConfig.timeout
-        if lastHeartbeatTime > 0 && currentTime - lastHeartbeatTime > UInt64(timeout * 1000) {
+        let lastTime = lock.withLock { lastHeartbeatTime }
+        if lastTime > 0 && currentTime - lastTime > UInt64(timeout * 1000) {
             // 心跳超时，断开连接
             await handleDisconnected(error: NexusError.heartbeatTimeout)
             return
@@ -484,7 +524,8 @@ public actor TCPConnection: @preconcurrency Connection {
     }
 
     private func handleHeartbeatResponse() async {
-        lastHeartbeatTime = UInt64(Date().timeIntervalSince1970 * 1000)
+        let currentTime = UInt64(Date().timeIntervalSince1970 * 1000)
+        lock.withLock { lastHeartbeatTime = currentTime }
     }
 }
 
