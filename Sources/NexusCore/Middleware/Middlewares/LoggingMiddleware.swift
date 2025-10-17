@@ -52,6 +52,7 @@ import OSLog
 /// [NexusKit][Outgoing] Connection: tcp-1, Size: 1024 bytes
 /// [NexusKit][Incoming] Connection: tcp-1, Size: 2048 bytes
 /// ```
+@available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
 public struct LoggingMiddleware: Middleware {
     // MARK: - Properties
 
@@ -73,7 +74,7 @@ public struct LoggingMiddleware: Middleware {
     // MARK: - Log Level
 
     /// 日志级别
-    public enum LogLevel: Int, Comparable {
+    public enum LogLevel: Int, Comparable, Sendable {
         case verbose = 0
         case debug = 1
         case info = 2

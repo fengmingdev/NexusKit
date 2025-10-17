@@ -12,7 +12,8 @@ import os.lock
 
 /// 高性能自旋锁（基于 os_unfair_lock）
 public final class UnfairLock: @unchecked Sendable {
-    private var _lock = os_unfair_lock()
+    @usableFromInline
+    internal var _lock = os_unfair_lock()
 
     public init() {}
 

@@ -168,36 +168,17 @@ public actor AdaptiveStrategy: ReconnectionStrategy {
         self.maxAttempts = maxAttempts
     }
 
-    public func nextDelay(attempt: Int, lastError: Error?) -> TimeInterval? {
+    nonisolated public func nextDelay(attempt: Int, lastError: Error?) -> TimeInterval? {
         guard attempt < maxAttempts else {
             return nil
         }
 
-        // 清理过期记录
-        cleanupOldRecords()
-
-        // 记录失败
-        failedConnections.append(Date())
-
-        // 根据成功率计算延迟
-        let successRate = calculateSuccessRate()
-
-        var delay: TimeInterval
-        if successRate > 0.8 {
-            // 网络质量好，使用较短延迟
-            delay = initialDelay * pow(1.5, Double(attempt))
-        } else if successRate > 0.5 {
-            // 网络质量一般，使用标准延迟
-            delay = initialDelay * pow(2.0, Double(attempt))
-        } else {
-            // 网络质量差，使用较长延迟
-            delay = initialDelay * pow(2.5, Double(attempt))
-        }
-
+        // 计算延迟（简化版本，不依赖历史记录）
+        let delay = initialDelay * pow(2.0, Double(attempt))
         return min(delay, maxDelay)
     }
 
-    public func shouldReconnect(error: Error) -> Bool {
+    nonisolated public func shouldReconnect(error: Error) -> Bool {
         if let nexusError = error as? NexusError {
             switch nexusError {
             case .authenticationFailed, .invalidCredentials:
@@ -215,7 +196,13 @@ public actor AdaptiveStrategy: ReconnectionStrategy {
         cleanupOldRecords()
     }
 
-    public func reset() {
+    nonisolated public func reset() {
+        Task {
+            await resetInternal()
+        }
+    }
+
+    private func resetInternal() {
         successfulConnections.removeAll()
         failedConnections.removeAll()
     }

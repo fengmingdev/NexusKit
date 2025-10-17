@@ -179,11 +179,11 @@ let package = Package(
             path: "Tests/NexusCoreTests"
         ),
 
-        // .testTarget(
-        //     name: "NexusTCPTests",
-        //     dependencies: ["NexusTCP"],
-        //     path: "Tests/NexusTCPTests"
-        // ),
+        .testTarget(
+            name: "NexusTCPTests",
+            dependencies: ["NexusTCP"],
+            path: "Tests/NexusTCPTests"
+        ),
 
         // .testTarget(
         //     name: "NexusWebSocketTests",
