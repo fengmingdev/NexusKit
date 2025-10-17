@@ -126,11 +126,12 @@ NexusKit 是一个现代化、高性能的 Swift 网络通信框架，支持多�
 - [ ] 端到端集成测试
 - [ ] 性能基准测试
 
-### ⚠️ 已知问题
-- **Swift 6 Actor 隔离问题**: Connection 协议的 `on()` 方法与 actor 实现存在类型不匹配
-  - 原因：Swift 6 严格并发检查导致 actor-isolated async 方法类型与协议不同
-  - 影响：TCPConnection 和 WebSocketConnection 无法编译
-  - 解决方案：参见 `SWIFT6_MIGRATION.md`
+### ✅ 已解决问题
+- **Swift 6.1.2 编译器 Bug** (已修复 2025-10-17)
+  - **问题**: 协议一致性检查失败，即使函数签名完全相同
+  - **原因**: Swift 6.1.2 对 `@Sendable` 闭包参数的类型检查存在 bug
+  - **解决**: 从 actor 迁移到 class + UnfairLock，从协议移除 `on()` 方法要求
+  - **详情**: 参见 `SWIFT6_COMPILER_BUG.md`
 
 ## 📅 计划中（v0.3.0 及以后）
 
@@ -314,7 +315,9 @@ NexusKit 是一个现代化、高性能的 Swift 网络通信框架，支持多�
 - NexusTCP 单元测试（2个测试文件，1320+ 行）✅
 - 完善的代码文档和注释 ✅
 - 6 个 WebSocket 示例程序 ✅
-- ⚠️ 待修复：Swift 6 actor 隔离编译问题
+- Swift 6.1.2 编译器 bug 修复 ✅
+- Actor → Class 迁移（线程安全保证）✅
+- ⚠️ 待修复：测试代码与 API 不匹配（需要更新）
 
 ---
 
