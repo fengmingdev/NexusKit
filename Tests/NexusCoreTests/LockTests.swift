@@ -98,7 +98,7 @@ final class LockTests: XCTestCase {
     func testAtomicWithClosure() {
         @Atomic var counter = 0
 
-        let result = $counter.withValue { value in
+        let result = $counter.mutate { value in
             value += 10
             return value
         }
@@ -118,7 +118,7 @@ final class LockTests: XCTestCase {
         for _ in 0..<3 {
             DispatchQueue.global().async {
                 for _ in 0..<iterations {
-                    $counter.withValue { value in
+                    $counter.mutate { value in
                         value += 1
                     }
                 }
@@ -139,7 +139,7 @@ final class LockTests: XCTestCase {
 
         @Atomic var data = TestData(name: "test", value: 0)
 
-        $data.withValue { value in
+        $data.mutate { value in
             value.name = "updated"
             value.value = 100
         }
@@ -189,10 +189,10 @@ final class LockTests: XCTestCase {
     func testAtomicCounterAdd() {
         let counter = AtomicCounter()
 
-        counter.add(5)
+        counter.increment(by: 5)
         XCTAssertEqual(counter.value, 5)
 
-        counter.add(10)
+        counter.increment(by: 10)
         XCTAssertEqual(counter.value, 15)
     }
 
@@ -205,7 +205,7 @@ final class LockTests: XCTestCase {
 
         XCTAssertEqual(counter.value, 3)
 
-        counter.reset()
+        counter.reset(to: 0)
         XCTAssertEqual(counter.value, 0)
     }
 
@@ -228,7 +228,7 @@ final class LockTests: XCTestCase {
 
         wait(for: [expectation], timeout: 10.0)
 
-        XCTAssertEqual(counter.value, iterations * 4)
+        XCTAssertEqual(counter.value, Int64(iterations * 4))
     }
 
     func testAtomicCounterMixedOperations() {
@@ -266,7 +266,7 @@ final class LockTests: XCTestCase {
         let lock = ReadWriteLock()
         var value = "initial"
 
-        let result = lock.read {
+        let result = lock.withReadLock {
             return value
         }
 
@@ -277,7 +277,7 @@ final class LockTests: XCTestCase {
         let lock = ReadWriteLock()
         var value = "initial"
 
-        lock.write {
+        lock.withWriteLock {
             value = "modified"
         }
 
@@ -296,7 +296,7 @@ final class LockTests: XCTestCase {
         for _ in 0..<5 {
             DispatchQueue.global().async {
                 for _ in 0..<100 {
-                    lock.read {
+                    lock.withReadLock {
                         _ = value
                         readCount += 1
                     }
@@ -322,7 +322,7 @@ final class LockTests: XCTestCase {
         for i in 0..<2 {
             DispatchQueue.global().async {
                 for j in 0..<100 {
-                    lock.write {
+                    lock.withWriteLock {
                         dictionary["key-\(i)-\(j)"] = j
                     }
                 }
@@ -334,7 +334,7 @@ final class LockTests: XCTestCase {
         for _ in 0..<2 {
             DispatchQueue.global().async {
                 for _ in 0..<100 {
-                    lock.read {
+                    lock.withReadLock {
                         _ = dictionary.count
                     }
                 }
@@ -345,7 +345,7 @@ final class LockTests: XCTestCase {
         wait(for: [expectation], timeout: 10.0)
 
         // 应该有200个键值对
-        let finalCount = lock.read { dictionary.count }
+        let finalCount = lock.withReadLock { dictionary.count }
         XCTAssertEqual(finalCount, 200)
     }
 
@@ -369,7 +369,7 @@ final class LockTests: XCTestCase {
 
         measure {
             for _ in 0..<10000 {
-                $counter.withValue { value in
+                $counter.mutate { value in
                     value += 1
                 }
             }
@@ -394,12 +394,12 @@ final class LockTests: XCTestCase {
             for i in 0..<10000 {
                 if i % 10 == 0 {
                     // 10% 写入
-                    lock.write {
+                    lock.withWriteLock {
                         value += 1
                     }
                 } else {
                     // 90% 读取
-                    lock.read {
+                    lock.withReadLock {
                         _ = value
                     }
                 }
@@ -448,7 +448,7 @@ final class LockTests: XCTestCase {
         for thread in 0..<3 {
             DispatchQueue.global().async {
                 for i in 0..<iterations {
-                    $array.withValue { value in
+                    $array.mutate { value in
                         value.append(thread * iterations + i)
                     }
                 }
@@ -471,7 +471,7 @@ final class LockTests: XCTestCase {
         @Atomic var value = 0
 
         do {
-            try $value.withValue { val in
+            try $value.mutate { val in
                 val = 10
                 throw TestError.failed
             }
@@ -491,7 +491,7 @@ final class LockTests: XCTestCase {
         counter.decrement()
         XCTAssertEqual(counter.value, -2)
 
-        counter.add(5)
+        counter.increment(by: 5)
         XCTAssertEqual(counter.value, 3)
     }
 
@@ -499,7 +499,7 @@ final class LockTests: XCTestCase {
         let lock = ReadWriteLock()
         var value = 10
 
-        let result = lock.read {
+        let result = lock.withReadLock {
             // 嵌套读取（注意：这取决于具体实现是否支持）
             let innerValue = value
             return innerValue * 2

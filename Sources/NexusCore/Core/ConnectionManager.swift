@@ -39,6 +39,63 @@ actor ConnectionManager {
     ///   - configuration: 连接配置
     /// - Returns: 连接实例
     /// - Throws: 创建失败时抛出错误
+    // MARK: - Connection Creation
+
+    /// 注册连接
+    ///
+    /// 由 ConnectionFactory 调用此方法来注册已创建的连接。
+    ///
+    /// - Parameters:
+    ///   - connection: 已创建的连接实例
+    ///   - endpoint: 连接端点
+    ///   - configuration: 连接配置
+    /// - Throws: 如果连接 ID 已存在或超出最大连接数
+    func register(
+        connection: any Connection,
+        endpoint: Endpoint,
+        configuration: ConnectionConfiguration
+    ) throws {
+        // 检查连接数限制
+        guard connections.count < maxConnections else {
+            throw NexusError.resourceExhausted
+        }
+
+        // 检查 ID 是否已存在
+        if connections[configuration.id] != nil {
+            throw NexusError.connectionAlreadyExists(id: configuration.id)
+        }
+
+        // 注册连接
+        connections[configuration.id] = connection
+        metadata[configuration.id] = ConnectionMetadata(
+            id: configuration.id,
+            endpoint: endpoint,
+            createdAt: Date(),
+            configuration: configuration
+        )
+
+        // 更新统计
+        stats = ConnectionStatistics(
+            totalConnections: stats.totalConnections + 1,
+            activeConnections: connections.count,
+            totalBytesSent: stats.totalBytesSent,
+            totalBytesReceived: stats.totalBytesReceived,
+            totalMessagesSent: stats.totalMessagesSent,
+            totalMessagesReceived: stats.totalMessagesReceived,
+            averageConnectionDuration: stats.averageConnectionDuration,
+            reconnectionCount: stats.reconnectionCount
+        )
+    }
+
+    /// 创建连接 (仅用于兼容性)
+    ///
+    /// 此方法由 ConnectionBuilder 使用，但总是抛出错误。
+    /// 请直接使用 TCPConnectionFactory 或 WebSocketConnectionFactory。
+    ///
+    /// - Parameters:
+    ///   - endpoint: 连接端点
+    ///   - configuration: 连接配置
+    /// - Throws: 总是抛出 NexusError
     func createConnection(
         endpoint: Endpoint,
         configuration: ConnectionConfiguration
@@ -53,13 +110,9 @@ actor ConnectionManager {
             throw NexusError.connectionAlreadyExists(id: configuration.id)
         }
 
-        // 根据端点类型创建相应的连接
-        let connection: any Connection
-
+        // 所有 case 都抛出异常，要求使用具体的 Factory
         switch endpoint {
         case .tcp:
-            // TCP 连接需要从外部注入（通过依赖注入）
-            // 这允许 NexusCore 保持独立，不依赖具体实现
             throw NexusError.custom(
                 message: "TCP connection requires NexusTCP module. Use TCPConnectionFactory.",
                 underlyingError: nil
@@ -83,29 +136,6 @@ actor ConnectionManager {
                 underlyingError: nil
             )
         }
-
-        // 注册连接
-        connections[configuration.id] = connection
-        metadata[configuration.id] = ConnectionMetadata(
-            id: configuration.id,
-            endpoint: endpoint,
-            createdAt: Date(),
-            configuration: configuration
-        )
-
-        // 更新统计
-        stats = ConnectionStatistics(
-            totalConnections: stats.totalConnections + 1,
-            activeConnections: connections.count,
-            totalBytesSent: stats.totalBytesSent,
-            totalBytesReceived: stats.totalBytesReceived,
-            totalMessagesSent: stats.totalMessagesSent,
-            totalMessagesReceived: stats.totalMessagesReceived,
-            averageConnectionDuration: stats.averageConnectionDuration,
-            reconnectionCount: stats.reconnectionCount
-        )
-
-        return connection
     }
 
     // MARK: - Connection Retrieval

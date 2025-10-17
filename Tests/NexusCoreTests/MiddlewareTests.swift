@@ -14,8 +14,9 @@ final class MiddlewareTests: XCTestCase {
     // MARK: - Test Middleware Implementations
 
     /// 测试用中间件：为数据添加前缀
-    class PrefixMiddleware: Middleware {
+    final class PrefixMiddleware: Middleware, @unchecked Sendable {
         let id = UUID().uuidString
+        let name = "PrefixMiddleware"
         let priority: Int
         let prefix: String
 
@@ -41,8 +42,9 @@ final class MiddlewareTests: XCTestCase {
     }
 
     /// 测试用中间件：添加后缀
-    class SuffixMiddleware: Middleware {
+    final class SuffixMiddleware: Middleware, @unchecked Sendable {
         let id = UUID().uuidString
+        let name = "SuffixMiddleware"
         let priority: Int
         let suffix: String
 
@@ -70,6 +72,7 @@ final class MiddlewareTests: XCTestCase {
     /// 测试用中间件：统计数据
     actor CounterMiddleware: Middleware {
         let id = UUID().uuidString
+        let name = "CounterMiddleware"
         let priority: Int = 100
 
         private(set) var outgoingCount = 0
@@ -87,8 +90,9 @@ final class MiddlewareTests: XCTestCase {
     }
 
     /// 测试用中间件：抛出错误
-    class ErrorMiddleware: Middleware {
+    final class ErrorMiddleware: Middleware, @unchecked Sendable {
         let id = UUID().uuidString
+        let name = "ErrorMiddleware"
         let priority: Int = 100
         let shouldThrow: Bool
 
@@ -125,7 +129,7 @@ final class MiddlewareTests: XCTestCase {
 
         // 测试发送流程
         let originalData = "Hello".data(using: .utf8)!
-        let context = MiddlewareContext(connectionId: "test-1")
+        let context = MiddlewareContext(connectionId: "test-1", endpoint: .tcp(host: "localhost", port: 8080))
 
         let processedData = try await pipeline.processOutgoing(originalData, context: context)
         let resultString = String(data: processedData, encoding: .utf8)
@@ -148,7 +152,7 @@ final class MiddlewareTests: XCTestCase {
 
         // 测试发送流程（应该按优先级排序：HIGH -> MED -> LOW）
         let originalData = "DATA".data(using: .utf8)!
-        let context = MiddlewareContext(connectionId: "test-2")
+        let context = MiddlewareContext(connectionId: "test-2", endpoint: .tcp(host: "localhost", port: 8080))
 
         let processedData = try await pipeline.processOutgoing(originalData, context: context)
         let resultString = String(data: processedData, encoding: .utf8)
@@ -167,7 +171,7 @@ final class MiddlewareTests: XCTestCase {
 
         // 测试接收流程（应该反向处理）
         let incomingData = "PREFIX:Hello:SUFFIX".data(using: .utf8)!
-        let context = MiddlewareContext(connectionId: "test-3")
+        let context = MiddlewareContext(connectionId: "test-3", endpoint: .tcp(host: "localhost", port: 8080))
 
         let processedData = try await pipeline.processIncoming(incomingData, context: context)
         let resultString = String(data: processedData, encoding: .utf8)
@@ -185,11 +189,11 @@ final class MiddlewareTests: XCTestCase {
         await pipeline.add(suffix)
 
         // 移除前缀中间件
-        await pipeline.remove(prefix.id)
+        await pipeline.remove(named: prefix.id)
 
         // 测试
         let originalData = "Hello".data(using: .utf8)!
-        let context = MiddlewareContext(connectionId: "test-4")
+        let context = MiddlewareContext(connectionId: "test-4", endpoint: .tcp(host: "localhost", port: 8080))
 
         let processedData = try await pipeline.processOutgoing(originalData, context: context)
         let resultString = String(data: processedData, encoding: .utf8)
@@ -208,7 +212,7 @@ final class MiddlewareTests: XCTestCase {
 
         // 测试
         let originalData = "Hello".data(using: .utf8)!
-        let context = MiddlewareContext(connectionId: "test-5")
+        let context = MiddlewareContext(connectionId: "test-5", endpoint: .tcp(host: "localhost", port: 8080))
 
         let processedData = try await pipeline.processOutgoing(originalData, context: context)
 
@@ -221,7 +225,7 @@ final class MiddlewareTests: XCTestCase {
 
         await pipeline.add(counter)
 
-        let context = MiddlewareContext(connectionId: "test-6")
+        let context = MiddlewareContext(connectionId: "test-6", endpoint: .tcp(host: "localhost", port: 8080))
         let testData = "Test".data(using: .utf8)!
 
         // 测试发送
@@ -244,7 +248,7 @@ final class MiddlewareTests: XCTestCase {
 
         await pipeline.add(errorMiddleware)
 
-        let context = MiddlewareContext(connectionId: "test-7")
+        let context = MiddlewareContext(connectionId: "test-7", endpoint: .tcp(host: "localhost", port: 8080))
         let testData = "Test".data(using: .utf8)!
 
         // 测试错误传播
@@ -281,13 +285,13 @@ final class MiddlewareTests: XCTestCase {
         let testData = "Hello".data(using: .utf8)!
 
         // 测试条件满足
-        let allowedContext = MiddlewareContext(connectionId: "allowed")
+        let allowedContext = MiddlewareContext(connectionId: "allowed", endpoint: .tcp(host: "localhost", port: 8080))
         let allowedResult = try await pipeline.processOutgoing(testData, context: allowedContext)
         let allowedString = String(data: allowedResult, encoding: .utf8)
         XCTAssertEqual(allowedString, "PREFIX:Hello")
 
         // 测试条件不满足
-        let deniedContext = MiddlewareContext(connectionId: "denied")
+        let deniedContext = MiddlewareContext(connectionId: "denied", endpoint: .tcp(host: "localhost", port: 8080))
         let deniedResult = try await pipeline.processOutgoing(testData, context: deniedContext)
         let deniedString = String(data: deniedResult, encoding: .utf8)
         XCTAssertEqual(deniedString, "Hello")
@@ -306,7 +310,7 @@ final class MiddlewareTests: XCTestCase {
         await pipeline.add(composed)
 
         let testData = "Hello".data(using: .utf8)!
-        let context = MiddlewareContext(connectionId: "test-8")
+        let context = MiddlewareContext(connectionId: "test-8", endpoint: .tcp(host: "localhost", port: 8080))
 
         // 测试组合中间件
         let result = try await pipeline.processOutgoing(testData, context: context)
@@ -321,6 +325,7 @@ final class MiddlewareTests: XCTestCase {
     func testMiddlewareContext() {
         let context = MiddlewareContext(
             connectionId: "conn-1",
+            endpoint: .tcp(host: "localhost", port: 8080),
             metadata: ["key1": "value1", "key2": "value2"]
         )
 
@@ -330,9 +335,9 @@ final class MiddlewareTests: XCTestCase {
     }
 
     func testMiddlewareContextEquality() {
-        let context1 = MiddlewareContext(connectionId: "conn-1")
-        let context2 = MiddlewareContext(connectionId: "conn-1")
-        let context3 = MiddlewareContext(connectionId: "conn-2")
+        let context1 = MiddlewareContext(connectionId: "conn-1", endpoint: .tcp(host: "localhost", port: 8080))
+        let context2 = MiddlewareContext(connectionId: "conn-1", endpoint: .tcp(host: "localhost", port: 8080))
+        let context3 = MiddlewareContext(connectionId: "conn-2", endpoint: .tcp(host: "localhost", port: 8080))
 
         XCTAssertEqual(context1.connectionId, context2.connectionId)
         XCTAssertNotEqual(context1.connectionId, context3.connectionId)
@@ -349,7 +354,7 @@ final class MiddlewareTests: XCTestCase {
         }
 
         let testData = "PerformanceTest".data(using: .utf8)!
-        let context = MiddlewareContext(connectionId: "perf-test")
+        let context = MiddlewareContext(connectionId: "perf-test", endpoint: .tcp(host: "localhost", port: 8080))
 
         measure {
             let expectation = self.expectation(description: "Performance test")

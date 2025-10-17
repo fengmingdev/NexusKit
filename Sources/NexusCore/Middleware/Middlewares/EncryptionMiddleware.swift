@@ -194,14 +194,13 @@ public struct EncryptionMiddleware: Middleware {
             throw NexusError.custom(message: "Invalid encrypted data", underlyingError: nil)
         }
 
-        // 提取 nonce
+        // 提取 nonce (12 字节)
         let nonceData = data.prefix(12)
-        let nonce = try AES.GCM.Nonce(data: nonceData)
 
         // 提取 ciphertext + tag
         let sealedData = data.dropFirst(12)
 
-        // 重构 sealed box
+        // 重构 sealed box (nonce + ciphertext + tag)
         let sealedBox = try AES.GCM.SealedBox(combined: nonceData + sealedData)
 
         // AES-GCM 解密和验证

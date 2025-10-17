@@ -57,7 +57,7 @@ public final class UnfairLock: @unchecked Sendable {
 
 /// 原子值包装器
 @propertyWrapper
-public struct Atomic<Value>: @unchecked Sendable {
+public final class Atomic<Value>: @unchecked Sendable {
     private let lock = UnfairLock()
     private var value: Value
 
@@ -82,7 +82,7 @@ public struct Atomic<Value>: @unchecked Sendable {
     /// - Parameter transform: 转换闭包
     /// - Returns: 新值
     @discardableResult
-    public mutating func mutate<T>(_ transform: (inout Value) throws -> T) rethrows -> T {
+    public func mutate<T>(_ transform: (inout Value) throws -> T) rethrows -> T {
         try lock.withLock {
             try transform(&value)
         }
@@ -92,7 +92,7 @@ public struct Atomic<Value>: @unchecked Sendable {
     /// - Parameter newValue: 新值
     /// - Returns: 旧值
     @discardableResult
-    public mutating func exchange(_ newValue: Value) -> Value {
+    public func exchange(_ newValue: Value) -> Value {
         lock.withLock {
             let oldValue = value
             value = newValue
@@ -106,7 +106,7 @@ public struct Atomic<Value>: @unchecked Sendable {
     ///   - newValue: 新值
     /// - Returns: 是否成功交换
     @discardableResult
-    public mutating func compareAndExchange(expected: Value, newValue: Value) -> Bool where Value: Equatable {
+    public func compareAndExchange(expected: Value, newValue: Value) -> Bool where Value: Equatable {
         lock.withLock {
             guard value == expected else { return false }
             value = newValue

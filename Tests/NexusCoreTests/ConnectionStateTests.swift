@@ -105,13 +105,13 @@ final class ConnectionStateTests: XCTestCase {
 
     func testDisconnectReasonWithError() {
         let error = NSError(domain: "test", code: 1, userInfo: nil)
-        let reason = DisconnectReason.error(error)
+        let reason = DisconnectReason.networkError(error)
 
         switch reason {
-        case .error(let e):
+        case .networkError(let e):
             XCTAssertNotNil(e)
         default:
-            XCTFail("Expected error reason")
+            XCTFail("Expected network error reason")
         }
     }
 

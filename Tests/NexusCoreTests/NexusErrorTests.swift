@@ -15,29 +15,29 @@ final class NexusErrorTests: XCTestCase {
 
     func testConnectionErrors() {
         let timeout = NexusError.connectionTimeout
-        let failed = NexusError.connectionFailed(reason: "Network unreachable")
+        let unreachable = NexusError.networkUnreachable
         let alreadyExists = NexusError.connectionAlreadyExists(id: "conn-1")
 
         XCTAssertNotNil(timeout)
-        XCTAssertNotNil(failed)
+        XCTAssertNotNil(unreachable)
         XCTAssertNotNil(alreadyExists)
     }
 
     func testAuthenticationErrors() {
         let authFailed = NexusError.authenticationFailed(reason: "Invalid credentials")
-        let authTimeout = NexusError.authenticationTimeout
+        let requestTimeout = NexusError.requestTimeout
 
         XCTAssertNotNil(authFailed)
-        XCTAssertNotNil(authTimeout)
+        XCTAssertNotNil(requestTimeout)
     }
 
     func testSendReceiveErrors() {
-        let sendFailed = NexusError.sendFailed(reason: "Connection lost")
-        let sendTimeout = NexusError.sendTimeout
-        let receiveFailed = NexusError.receiveFailed(reason: "Invalid data")
+        let sendFailed = NexusError.sendFailed(NSError(domain: "test", code: 1))
+        let requestTimeout = NexusError.requestTimeout
+        let receiveFailed = NexusError.receiveFailed(NSError(domain: "test", code: 2))
 
         XCTAssertNotNil(sendFailed)
-        XCTAssertNotNil(sendTimeout)
+        XCTAssertNotNil(requestTimeout)
         XCTAssertNotNil(receiveFailed)
     }
 
@@ -46,16 +46,16 @@ final class NexusErrorTests: XCTestCase {
     func testErrorEquality() {
         let error1 = NexusError.connectionTimeout
         let error2 = NexusError.connectionTimeout
-        let error3 = NexusError.connectionFailed(reason: "test")
+        let error3 = NexusError.networkUnreachable
 
         XCTAssertEqual(error1, error2)
         XCTAssertNotEqual(error1, error3)
     }
 
     func testErrorEqualityWithReason() {
-        let error1 = NexusError.connectionFailed(reason: "Network error")
-        let error2 = NexusError.connectionFailed(reason: "Network error")
-        let error3 = NexusError.connectionFailed(reason: "Different error")
+        let error1 = NexusError.authenticationFailed(reason: "Network error")
+        let error2 = NexusError.authenticationFailed(reason: "Network error")
+        let error3 = NexusError.authenticationFailed(reason: "Different error")
 
         XCTAssertEqual(error1, error2)
         XCTAssertNotEqual(error1, error3)
@@ -73,8 +73,8 @@ final class NexusErrorTests: XCTestCase {
 
     func testFailureReasons() {
         let invalidState = NexusError.invalidStateTransition(
-            from: .disconnected,
-            to: .connected
+            from: "disconnected",
+            to: "connected"
         )
         XCTAssertNotNil(invalidState.failureReason)
     }
@@ -83,14 +83,14 @@ final class NexusErrorTests: XCTestCase {
 
     func testInvalidStateTransitionError() {
         let error = NexusError.invalidStateTransition(
-            from: .disconnected,
-            to: .connected
+            from: "disconnected",
+            to: "connected"
         )
 
         switch error {
         case .invalidStateTransition(let from, let to):
-            XCTAssertEqual(from, .disconnected)
-            XCTAssertEqual(to, .connected)
+            XCTAssertEqual(from, "disconnected")
+            XCTAssertEqual(to, "connected")
         default:
             XCTFail("Expected invalidStateTransition error")
         }
@@ -137,10 +137,10 @@ final class NexusErrorTests: XCTestCase {
 
     func testResourceErrors() {
         let exhausted = NexusError.resourceExhausted
-        let unavailable = NexusError.resourceUnavailable(resource: "connection pool")
+        let outOfMemory = NexusError.outOfMemory
 
         XCTAssertNotNil(exhausted)
-        XCTAssertNotNil(unavailable)
+        XCTAssertNotNil(outOfMemory)
     }
 
     // MARK: - Protocol Errors Tests
