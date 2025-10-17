@@ -260,10 +260,12 @@ NexusKit 采用分层、模块化架构：
 - ✅ Auto-reconnection (4种策略)
 - ✅ 高性能工具（UnfairLock、Atomic）
 
-### v0.2.0 (进行中 🚧)
+### v0.2.0 (当前版本 ✅)
 - ✅ WebSocket support (完成)
+- ✅ NexusCore 单元测试 (6个测试文件，1800+ 行)
+- ✅ GitHub Actions CI/CD
+- ✅ 贡献指南 (CONTRIBUTING.md)
 - 🔲 Socket.IO full support
-- 🔲 单元测试
 - 🔲 集成测试
 
 ### v0.3.0 (计划中 📅)
