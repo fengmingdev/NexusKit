@@ -39,7 +39,17 @@ final class TCPConnectionTests: XCTestCase {
         let endpoint = Endpoint.tcp(host: testHost, port: testPort)
         let config = ConnectionConfiguration(
             id: "test-connection",
-            endpoint: endpoint
+            endpoint: endpoint,
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
+            connectTimeout: 10.0,
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: .init(),
+            metadata: [:]
         )
 
         connection = TCPConnection(
@@ -51,7 +61,8 @@ final class TCPConnectionTests: XCTestCase {
         Task {
             let state = await connection.state
             XCTAssertEqual(state, .disconnected)
-            XCTAssertEqual(await connection.id, "test-connection")
+            let connectionId = await connection.id
+            XCTAssertEqual(connectionId, "test-connection")
         }
     }
 
@@ -59,7 +70,20 @@ final class TCPConnectionTests: XCTestCase {
 
     func testInitialState() async {
         let endpoint = Endpoint.tcp(host: testHost, port: testPort)
-        let config = ConnectionConfiguration(id: "test", endpoint: endpoint)
+        let config = ConnectionConfiguration(
+            id: "test",
+            endpoint: endpoint,
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
+            connectTimeout: 10.0,
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: .init(),
+            metadata: [:]
+        )
         connection = TCPConnection(id: "test", endpoint: endpoint, configuration: config)
 
         let state = await connection.state
@@ -71,7 +95,16 @@ final class TCPConnectionTests: XCTestCase {
         let config = ConnectionConfiguration(
             id: "test",
             endpoint: endpoint,
-            connectTimeout: 0.1 // Short timeout for test
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
+            connectTimeout: 0.1, // Short timeout for test
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: .init(),
+            metadata: [:]
         )
         connection = TCPConnection(id: "test", endpoint: endpoint, configuration: config)
 
@@ -85,7 +118,20 @@ final class TCPConnectionTests: XCTestCase {
 
     func testInvalidStateTransition() async throws {
         let endpoint = Endpoint.tcp(host: testHost, port: testPort)
-        let config = ConnectionConfiguration(id: "test", endpoint: endpoint)
+        let config = ConnectionConfiguration(
+            id: "test",
+            endpoint: endpoint,
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
+            connectTimeout: 10.0,
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: .init(),
+            metadata: [:]
+        )
         connection = TCPConnection(id: "test", endpoint: endpoint, configuration: config)
 
         // Cannot connect while already connecting
@@ -122,7 +168,16 @@ final class TCPConnectionTests: XCTestCase {
         let config = ConnectionConfiguration(
             id: "test",
             endpoint: endpoint,
-            connectTimeout: 0.5 // 500ms timeout
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
+            connectTimeout: 0.5, // 500ms timeout
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: .init(),
+            metadata: [:]
         )
         connection = TCPConnection(id: "test", endpoint: endpoint, configuration: config)
 
@@ -136,7 +191,20 @@ final class TCPConnectionTests: XCTestCase {
 
     func testInvalidEndpoint() async throws {
         let endpoint = Endpoint.webSocket(url: URL(string: "ws://example.com")!)
-        let config = ConnectionConfiguration(id: "test", endpoint: endpoint)
+        let config = ConnectionConfiguration(
+            id: "test",
+            endpoint: endpoint,
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
+            connectTimeout: 10.0,
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: .init(),
+            metadata: [:]
+        )
         connection = TCPConnection(id: "test", endpoint: endpoint, configuration: config)
 
         do {
@@ -151,7 +219,20 @@ final class TCPConnectionTests: XCTestCase {
 
     func testDisconnectFromDisconnectedState() async {
         let endpoint = Endpoint.tcp(host: testHost, port: testPort)
-        let config = ConnectionConfiguration(id: "test", endpoint: endpoint)
+        let config = ConnectionConfiguration(
+            id: "test",
+            endpoint: endpoint,
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
+            connectTimeout: 10.0,
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: .init(),
+            metadata: [:]
+        )
         connection = TCPConnection(id: "test", endpoint: endpoint, configuration: config)
 
         // Should be no-op
@@ -174,7 +255,16 @@ final class TCPConnectionTests: XCTestCase {
         let config = ConnectionConfiguration(
             id: "test",
             endpoint: endpoint,
-            lifecycleHooks: hooks
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
+            connectTimeout: 10.0,
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: hooks,
+            metadata: [:]
         )
         connection = TCPConnection(id: "test", endpoint: endpoint, configuration: config)
 
@@ -195,7 +285,20 @@ final class TCPConnectionTests: XCTestCase {
 
     func testSendWhenDisconnected() async throws {
         let endpoint = Endpoint.tcp(host: testHost, port: testPort)
-        let config = ConnectionConfiguration(id: "test", endpoint: endpoint)
+        let config = ConnectionConfiguration(
+            id: "test",
+            endpoint: endpoint,
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
+            connectTimeout: 10.0,
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: .init(),
+            metadata: [:]
+        )
         connection = TCPConnection(id: "test", endpoint: endpoint, configuration: config)
 
         let testData = "Hello".data(using: .utf8)!
@@ -210,7 +313,20 @@ final class TCPConnectionTests: XCTestCase {
 
     func testSendWithoutProtocolAdapter() async throws {
         let endpoint = Endpoint.tcp(host: testHost, port: testPort)
-        let config = ConnectionConfiguration(id: "test", endpoint: endpoint)
+        let config = ConnectionConfiguration(
+            id: "test",
+            endpoint: endpoint,
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
+            connectTimeout: 10.0,
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: .init(),
+            metadata: [:]
+        )
         connection = TCPConnection(id: "test", endpoint: endpoint, configuration: config)
 
         struct TestMessage: Codable {
@@ -229,7 +345,20 @@ final class TCPConnectionTests: XCTestCase {
 
     func testReceiveNotSupported() async throws {
         let endpoint = Endpoint.tcp(host: testHost, port: testPort)
-        let config = ConnectionConfiguration(id: "test", endpoint: endpoint)
+        let config = ConnectionConfiguration(
+            id: "test",
+            endpoint: endpoint,
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
+            connectTimeout: 10.0,
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: .init(),
+            metadata: [:]
+        )
         connection = TCPConnection(id: "test", endpoint: endpoint, configuration: config)
 
         do {
@@ -246,7 +375,20 @@ final class TCPConnectionTests: XCTestCase {
 
     func testReceiveDecodableNotSupported() async throws {
         let endpoint = Endpoint.tcp(host: testHost, port: testPort)
-        let config = ConnectionConfiguration(id: "test", endpoint: endpoint)
+        let config = ConnectionConfiguration(
+            id: "test",
+            endpoint: endpoint,
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
+            connectTimeout: 10.0,
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: .init(),
+            metadata: [:]
+        )
         connection = TCPConnection(id: "test", endpoint: endpoint, configuration: config)
 
         struct TestMessage: Codable {
@@ -269,7 +411,20 @@ final class TCPConnectionTests: XCTestCase {
 
     func testEventHandlerRegistration() async {
         let endpoint = Endpoint.tcp(host: testHost, port: testPort)
-        let config = ConnectionConfiguration(id: "test", endpoint: endpoint)
+        let config = ConnectionConfiguration(
+            id: "test",
+            endpoint: endpoint,
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
+            connectTimeout: 10.0,
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: .init(),
+            metadata: [:]
+        )
         connection = TCPConnection(id: "test", endpoint: endpoint, configuration: config)
 
         var receivedData: Data?
@@ -285,7 +440,20 @@ final class TCPConnectionTests: XCTestCase {
 
     func testMultipleEventHandlers() async {
         let endpoint = Endpoint.tcp(host: testHost, port: testPort)
-        let config = ConnectionConfiguration(id: "test", endpoint: endpoint)
+        let config = ConnectionConfiguration(
+            id: "test",
+            endpoint: endpoint,
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
+            connectTimeout: 10.0,
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: .init(),
+            metadata: [:]
+        )
         connection = TCPConnection(id: "test", endpoint: endpoint, configuration: config)
 
         var handler1Called = false
@@ -319,8 +487,16 @@ final class TCPConnectionTests: XCTestCase {
         let config = ConnectionConfiguration(
             id: "test",
             endpoint: endpoint,
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
             connectTimeout: 0.2,
-            lifecycleHooks: hooks
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: hooks,
+            metadata: [:]
         )
         connection = TCPConnection(id: "test", endpoint: endpoint, configuration: config)
 
@@ -338,7 +514,7 @@ final class TCPConnectionTests: XCTestCase {
 
         var disconnectingCalled = false
         let hooks = LifecycleHooks(
-            onDisconnecting: {
+            onDisconnected: { _ in
                 disconnectingCalled = true
             }
         )
@@ -346,7 +522,16 @@ final class TCPConnectionTests: XCTestCase {
         let config = ConnectionConfiguration(
             id: "test",
             endpoint: endpoint,
-            lifecycleHooks: hooks
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
+            connectTimeout: 10.0,
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: hooks,
+            metadata: [:]
         )
         connection = TCPConnection(id: "test", endpoint: endpoint, configuration: config)
 
@@ -371,8 +556,16 @@ final class TCPConnectionTests: XCTestCase {
         let config = ConnectionConfiguration(
             id: "test",
             endpoint: endpoint,
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
             connectTimeout: 0.5,
-            lifecycleHooks: hooks
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: hooks,
+            metadata: [:]
         )
         connection = TCPConnection(id: "test", endpoint: endpoint, configuration: config)
 
@@ -400,7 +593,16 @@ final class TCPConnectionTests: XCTestCase {
         let config = ConnectionConfiguration(
             id: "test",
             endpoint: endpoint,
-            middlewares: [middleware]
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [middleware],
+            connectTimeout: 10.0,
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: .init(),
+            metadata: [:]
         )
         connection = TCPConnection(id: "test", endpoint: endpoint, configuration: config)
 
@@ -416,13 +618,20 @@ final class TCPConnectionTests: XCTestCase {
         let config = ConnectionConfiguration(
             id: "custom-id",
             endpoint: endpoint,
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
             connectTimeout: 15.0,
             readWriteTimeout: 30.0,
             heartbeatConfig: HeartbeatConfiguration(
                 interval: 60,
                 timeout: 120,
                 enabled: true
-            )
+            ),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: .init(),
+            metadata: [:]
         )
 
         connection = TCPConnection(
@@ -432,7 +641,8 @@ final class TCPConnectionTests: XCTestCase {
         )
 
         Task {
-            XCTAssertEqual(await connection.id, "custom-id")
+            let connectionId = await connection.id
+            XCTAssertEqual(connectionId, "custom-id")
         }
     }
 
@@ -443,7 +653,16 @@ final class TCPConnectionTests: XCTestCase {
         let config = ConnectionConfiguration(
             id: "test",
             endpoint: endpoint,
-            tlsConfig: tlsConfig
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
+            connectTimeout: 10.0,
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: tlsConfig,
+            proxyConfig: nil,
+            lifecycleHooks: .init(),
+            metadata: [:]
         )
 
         connection = TCPConnection(
@@ -468,7 +687,16 @@ final class TCPConnectionTests: XCTestCase {
         let config = ConnectionConfiguration(
             id: "test",
             endpoint: endpoint,
-            proxyConfig: proxyConfig
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
+            connectTimeout: 10.0,
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: proxyConfig,
+            lifecycleHooks: .init(),
+            metadata: [:]
         )
 
         connection = TCPConnection(
@@ -484,7 +712,20 @@ final class TCPConnectionTests: XCTestCase {
 
     func testConcurrentDisconnect() async {
         let endpoint = Endpoint.tcp(host: testHost, port: testPort)
-        let config = ConnectionConfiguration(id: "test", endpoint: endpoint)
+        let config = ConnectionConfiguration(
+            id: "test",
+            endpoint: endpoint,
+            protocolAdapter: nil,
+            reconnectionStrategy: nil,
+            middlewares: [],
+            connectTimeout: 10.0,
+            readWriteTimeout: 30.0,
+            heartbeatConfig: .init(interval: 30, timeout: 60, enabled: false),
+            tlsConfig: nil,
+            proxyConfig: nil,
+            lifecycleHooks: .init(),
+            metadata: [:]
+        )
         connection = TCPConnection(id: "test", endpoint: endpoint, configuration: config)
 
         // Multiple concurrent disconnects should be safe

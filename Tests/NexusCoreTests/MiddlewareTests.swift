@@ -208,7 +208,7 @@ final class MiddlewareTests: XCTestCase {
         await pipeline.add(SuffixMiddleware(suffix: ":B"))
 
         // 清除所有中间件
-        await pipeline.clear()
+        await pipeline.removeAll()
 
         // 测试
         let originalData = "Hello".data(using: .utf8)!
@@ -271,13 +271,14 @@ final class MiddlewareTests: XCTestCase {
         let pipeline = MiddlewarePipeline()
 
         let baseMiddleware = PrefixMiddleware(prefix: "PREFIX:")
-        let condition: (MiddlewareContext) async -> Bool = { context in
+        let condition: @Sendable (MiddlewareContext) -> Bool = { context in
             context.connectionId == "allowed"
         }
 
         let conditionalMiddleware = ConditionalMiddleware(
-            middleware: baseMiddleware,
-            condition: condition
+            name: "Conditional",
+            condition: condition,
+            middleware: baseMiddleware
         )
 
         await pipeline.add(conditionalMiddleware)
@@ -305,7 +306,7 @@ final class MiddlewareTests: XCTestCase {
         let prefix = PrefixMiddleware(prefix: "A:", priority: 50)
         let suffix = SuffixMiddleware(suffix: ":B", priority: 100)
 
-        let composed = ComposedMiddleware(middlewares: [prefix, suffix])
+        let composed = ComposedMiddleware(first: prefix, second: suffix)
 
         await pipeline.add(composed)
 

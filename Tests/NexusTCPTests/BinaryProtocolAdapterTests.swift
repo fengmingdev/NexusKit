@@ -38,7 +38,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
 
         let message = TestMessage(text: "Hello", number: 42)
         let endpoint = Endpoint.tcp(host: "localhost", port: 8080)
-        let context = EncodingContext(connectionId: "test", endpoint: endpoint)
+        let context = EncodingContext(connectionId: "test")
 
         let data = try adapter.encode(message, context: context)
 
@@ -58,8 +58,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
 
         let message = TestMessage(value: "test")
         let endpoint = Endpoint.tcp(host: "localhost", port: 8080)
-        var context = EncodingContext(connectionId: "test", endpoint: endpoint)
-        context.metadata["functionId"] = "12345"
+        let context = EncodingContext(connectionId: "test", metadata: ["functionId": "12345"])
 
         let data = try adapter.encode(message, context: context)
 
@@ -78,7 +77,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
 
         let message = TestMessage(data: "test")
         let endpoint = Endpoint.tcp(host: "localhost", port: 8080)
-        let context = EncodingContext(connectionId: "test", endpoint: endpoint)
+        let context = EncodingContext(connectionId: "test")
 
         let data = try adapter.encode(message, context: context)
 
@@ -95,7 +94,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
 
         let message = TestMessage(data: "test")
         let endpoint = Endpoint.tcp(host: "localhost", port: 8080)
-        let context = EncodingContext(connectionId: "test", endpoint: endpoint)
+        let context = EncodingContext(connectionId: "test")
 
         let data = try adapter.encode(message, context: context)
 
@@ -114,7 +113,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
 
         let message = TestMessage(data: "test")
         let endpoint = Endpoint.tcp(host: "localhost", port: 8080)
-        let context = EncodingContext(connectionId: "test", endpoint: endpoint)
+        let context = EncodingContext(connectionId: "test")
 
         let data = try adapter.encode(message, context: context)
 
@@ -129,7 +128,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
 
         let message = TestMessage(data: "test")
         let endpoint = Endpoint.tcp(host: "localhost", port: 8080)
-        let context = EncodingContext(connectionId: "test", endpoint: endpoint)
+        let context = EncodingContext(connectionId: "test")
 
         let data = try adapter.encode(message, context: context)
 
@@ -150,12 +149,12 @@ final class BinaryProtocolAdapterTests: XCTestCase {
 
         // Encode first
         let endpoint = Endpoint.tcp(host: "localhost", port: 8080)
-        let encContext = EncodingContext(connectionId: "test", endpoint: endpoint)
+        let encContext = EncodingContext(connectionId: "test")
         let encoded = try adapter.encode(original, context: encContext)
 
         // Decode (skip the 4-byte length prefix)
         let messageData = encoded.dropFirst(4)
-        let decContext = DecodingContext(connectionId: "test", endpoint: endpoint)
+        let decContext = DecodingContext(connectionId: "test", dataSize: Int(messageData.count))
         let decoded: TestMessage = try adapter.decode(messageData, as: TestMessage.self, context: decContext)
 
         XCTAssertEqual(decoded, original)
@@ -169,7 +168,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
         }
 
         let endpoint = Endpoint.tcp(host: "localhost", port: 8080)
-        let context = DecodingContext(connectionId: "test", endpoint: endpoint)
+        let context = DecodingContext(connectionId: "test", dataSize: invalidData.count)
 
         XCTAssertThrowsError(try adapter.decode(invalidData, as: TestMessage.self, context: context)) { error in
             guard let nexusError = error as? NexusError else {
@@ -202,7 +201,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
         }
 
         let endpoint = Endpoint.tcp(host: "localhost", port: 8080)
-        let context = DecodingContext(connectionId: "test", endpoint: endpoint)
+        let context = DecodingContext(connectionId: "test", dataSize: data.count)
 
         XCTAssertThrowsError(try adapter.decode(data, as: TestMessage.self, context: context)) { error in
             guard let nexusError = error as? NexusError else {
@@ -256,7 +255,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
         // Large message that should trigger compression
         let message = TestMessage(text: String(repeating: "A", count: 2000))
         let endpoint = Endpoint.tcp(host: "localhost", port: 8080)
-        let context = EncodingContext(connectionId: "test", endpoint: endpoint)
+        let context = EncodingContext(connectionId: "test")
 
         let data = try adapter.encode(message, context: context)
 
@@ -277,7 +276,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
 
         let message = TestMessage(text: String(repeating: "A", count: 2000))
         let endpoint = Endpoint.tcp(host: "localhost", port: 8080)
-        let context = EncodingContext(connectionId: "test", endpoint: endpoint)
+        let context = EncodingContext(connectionId: "test")
 
         let data = try adapter.encode(message, context: context)
 
@@ -300,12 +299,12 @@ final class BinaryProtocolAdapterTests: XCTestCase {
 
         // Encode
         let endpoint = Endpoint.tcp(host: "localhost", port: 8080)
-        let encContext = EncodingContext(connectionId: "test", endpoint: endpoint)
+        let encContext = EncodingContext(connectionId: "test")
         let encoded = try adapter.encode(original, context: encContext)
 
         // Decode
         let messageData = encoded.dropFirst(4)
-        let decContext = DecodingContext(connectionId: "test", endpoint: endpoint)
+        let decContext = DecodingContext(connectionId: "test", dataSize: Int(messageData.count))
         let decoded: TestMessage = try adapter.decode(messageData, as: TestMessage.self, context: decContext)
 
         XCTAssertEqual(decoded, original)
@@ -334,12 +333,12 @@ final class BinaryProtocolAdapterTests: XCTestCase {
 
         // Encode
         let endpoint = Endpoint.tcp(host: "localhost", port: 8080)
-        let encContext = EncodingContext(connectionId: "test", endpoint: endpoint)
+        let encContext = EncodingContext(connectionId: "test")
         let encoded = try adapter.encode(original, context: encContext)
 
         // Decode
         let messageData = encoded.dropFirst(4)
-        let decContext = DecodingContext(connectionId: "test", endpoint: endpoint)
+        let decContext = DecodingContext(connectionId: "test", dataSize: Int(messageData.count))
         let decoded: TestMessage = try adapter.decode(messageData, as: TestMessage.self, context: decContext)
 
         XCTAssertEqual(decoded, original)
@@ -385,7 +384,11 @@ final class BinaryProtocolAdapterTests: XCTestCase {
 
         XCTAssertEqual(events.count, 1)
         if case .control(let type, _) = events[0] {
-            XCTAssertEqual(type, "heartbeat")
+            if case .heartbeat = type {
+                // Expected
+            } else {
+                XCTFail("Expected heartbeat type")
+            }
         } else {
             XCTFail("Expected control event with heartbeat type")
         }
@@ -435,6 +438,8 @@ final class BinaryProtocolAdapterTests: XCTestCase {
             } else {
                 XCTFail("Wrong error type: \(error)")
             }
+        } catch {
+            XCTFail("Unexpected error: \(error)")
         }
     }
 
@@ -447,7 +452,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
 
         let message = TestMessage(data: "test")
         let endpoint = Endpoint.tcp(host: "localhost", port: 8080)
-        let context = EncodingContext(connectionId: "test", endpoint: endpoint)
+        let context = EncodingContext(connectionId: "test")
 
         // Generate multiple requests
         let data1 = try adapter.encode(message, context: context)
@@ -478,7 +483,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
             for i in 0..<100 {
                 group.addTask {
                     let message = TestMessage(value: i)
-                    let context = EncodingContext(connectionId: "test-\(i)", endpoint: endpoint)
+                    let context = EncodingContext(connectionId: "test-\(i)")
                     _ = try? self.adapter.encode(message, context: context)
                 }
             }
@@ -506,7 +511,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
 
         let message = EmptyMessage()
         let endpoint = Endpoint.tcp(host: "localhost", port: 8080)
-        let encContext = EncodingContext(connectionId: "test", endpoint: endpoint)
+        let encContext = EncodingContext(connectionId: "test")
 
         let encoded = try adapter.encode(message, context: encContext)
 
@@ -515,7 +520,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
 
         // Decode
         let messageData = encoded.dropFirst(4)
-        let decContext = DecodingContext(connectionId: "test", endpoint: endpoint)
+        let decContext = DecodingContext(connectionId: "test", dataSize: Int(messageData.count))
         let decoded: EmptyMessage = try adapter.decode(messageData, as: EmptyMessage.self, context: decContext)
 
         XCTAssertEqual(decoded, message)
@@ -531,7 +536,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
         let message = LargeMessage(data: largeData)
 
         let endpoint = Endpoint.tcp(host: "localhost", port: 8080)
-        let encContext = EncodingContext(connectionId: "test", endpoint: endpoint)
+        let encContext = EncodingContext(connectionId: "test")
 
         let encoded = try adapter.encode(message, context: encContext)
 
@@ -541,7 +546,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
 
         // Decode
         let messageData = encoded.dropFirst(4)
-        let decContext = DecodingContext(connectionId: "test", endpoint: endpoint)
+        let decContext = DecodingContext(connectionId: "test", dataSize: Int(messageData.count))
         let decoded: LargeMessage = try adapter.decode(messageData, as: LargeMessage.self, context: decContext)
 
         XCTAssertEqual(decoded.data.count, largeData.count)

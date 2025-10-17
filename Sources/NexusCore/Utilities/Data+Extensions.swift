@@ -54,7 +54,7 @@ public extension Data {
             guard let bytes = bufferPtr.baseAddress?.advanced(by: offset) else {
                 throw NexusError.invalidMessageFormat(reason: "Failed to get bytes pointer")
             }
-            let value = bytes.load(as: T.self)
+            let value = bytes.loadUnaligned(as: T.self)
             return T(bigEndian: value)
         }
     }
@@ -67,7 +67,7 @@ public extension Data {
 
         return withUnsafeBytes { bufferPtr in
             guard let bytes = bufferPtr.baseAddress?.advanced(by: offset) else { return nil }
-            let value = bytes.load(as: UInt32.self)
+            let value = bytes.loadUnaligned(as: UInt32.self)
             return UInt32(bigEndian: value)
         }
     }
@@ -80,7 +80,7 @@ public extension Data {
 
         return withUnsafeBytes { bufferPtr in
             guard let bytes = bufferPtr.baseAddress?.advanced(by: offset) else { return nil }
-            let value = bytes.load(as: UInt16.self)
+            let value = bytes.loadUnaligned(as: UInt16.self)
             return UInt16(bigEndian: value)
         }
     }
@@ -101,7 +101,7 @@ public extension Data {
 
         return withUnsafeBytes { bufferPtr in
             guard let bytes = bufferPtr.baseAddress?.advanced(by: offset) else { return nil }
-            let value = bytes.load(as: UInt64.self)
+            let value = bytes.loadUnaligned(as: UInt64.self)
             return UInt64(bigEndian: value)
         }
     }
