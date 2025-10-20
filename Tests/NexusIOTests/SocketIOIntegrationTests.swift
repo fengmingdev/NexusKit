@@ -227,11 +227,13 @@ final class SocketIOIntegrationTests: XCTestCase {
                 
                 // 加入房间
                 try? await rooms.join("test_room")
-                XCTAssertTrue(await rooms.isInRoom("test_room"))
+                let isInRoom1 = await rooms.isInRoom("test_room")
+                XCTAssertTrue(isInRoom1)
                 
                 // 离开房间
                 try? await rooms.leave("test_room")
-                XCTAssertFalse(await rooms.isInRoom("test_room"))
+                let isInRoom2 = await rooms.isInRoom("test_room")
+                XCTAssertFalse(isInRoom2)
             }
         }
         await client.setDelegate(delegate)
@@ -244,7 +246,8 @@ final class SocketIOIntegrationTests: XCTestCase {
 
 // MARK: - Test Delegate
 
-class TestDelegate: SocketIOClientDelegate {
+/// 测试代理，使用 @unchecked Sendable 因为回调在测试中不会并发访问
+final class TestDelegate: SocketIOClientDelegate, @unchecked Sendable {
     var onConnect: ((SocketIOClient) -> Void)?
     var onDisconnect: ((SocketIOClient, String) -> Void)?
     var onError: ((SocketIOClient, Error) -> Void)?

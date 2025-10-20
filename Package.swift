@@ -38,12 +38,6 @@ let package = Package(
             targets: ["NexusCore", "NexusWebSocket", "NexusIO"]
         ),
 
-        // Compatibility layer (NodeSocket adapter)
-        .library(
-            name: "NexusCompat",
-            targets: ["NexusCore", "NexusTCP", "NexusCompat"]
-        ),
-
         // Complete package (all modules)
         .library(
             name: "NexusKit",
@@ -51,8 +45,7 @@ let package = Package(
                 "NexusCore",
                 "NexusTCP",
                 "NexusWebSocket",
-                "NexusIO",
-                "NexusCompat"
+                "NexusIO"
             ]
         )
 
@@ -138,14 +131,7 @@ let package = Package(
 
         // MARK: - Compatibility Layer
 
-        .target(
-            name: "NexusCompat",
-            dependencies: [
-                "NexusCore",
-                "NexusTCP"
-            ],
-            path: "Sources/NexusCompat"
-        ),
+        // Removed: NexusCompat module (not suitable for open-source library)
 
         // MARK: - Middleware Modules
 
