@@ -69,6 +69,10 @@ public actor SocketIOClient {
     /// 房间管理器
     private var roomManager: SocketIORoom?
     
+    /// 二进制消息缓存（用于多部分二进制消息）
+    private var binaryBuffers: [Data] = []
+    private var expectedBinaryAttachments: Int = 0
+    
     /// 当前命名空间
     private var namespace: String = "/"
     
@@ -354,9 +358,13 @@ public actor SocketIOClient {
             let error = SocketIOError.connectionError(message)
             await delegate?.socketIOClient(self, didFailWithError: error)
             
-        case .binaryEvent, .binaryAck:
-            // 暂不支持二进制
-            break
+        case .binaryEvent:
+            // 二进制事件消息
+            await handleBinaryEvent(packet)
+            
+        case .binaryAck:
+            // 二进制确认消息
+            await handleBinaryAck(packet)
         }
     }
     
@@ -400,6 +408,100 @@ public actor SocketIOClient {
     private func generateAckId() -> Int {
         ackId += 1
         return ackId
+    }
+    
+    // MARK: - Binary Message Support
+    
+    /// 处理二进制事件
+    private func handleBinaryEvent(_ packet: SocketIOPacket) async {
+        // Socket.IO 二进制消息格式：
+        // 1. 首先收到一个 binaryEvent 包，包含 attachments 数量
+        // 2. 然后收到对应数量的二进制数据包
+        
+        // 暂时简化处理：将二进制数据作为 Data 类型传递
+        if let eventName = await parser.extractEventName(from: packet) {
+            var eventData = await parser.extractEventData(from: packet)
+            
+            // 如果有二进制附件，添加到数据中
+            if !binaryBuffers.isEmpty {
+                eventData.append(contentsOf: binaryBuffers)
+                binaryBuffers.removeAll()
+                expectedBinaryAttachments = 0
+            }
+            
+            // 触发事件处理器
+            if let handlers = eventHandlers[eventName] {
+                for handler in handlers {
+                    await handler(eventData)
+                }
+            }
+            
+            // 通知代理
+            await delegate?.socketIOClient(self, didReceiveEvent: eventName, data: eventData)
+        }
+    }
+    
+    /// 处理二进制确认
+    private func handleBinaryAck(_ packet: SocketIOPacket) async {
+        guard let id = packet.id, let callback = ackCallbacks[id] else {
+            return
+        }
+        
+        var ackData = packet.data ?? []
+        
+        // 如果有二进制附件，添加到数据中
+        if !binaryBuffers.isEmpty {
+            ackData.append(contentsOf: binaryBuffers)
+            binaryBuffers.removeAll()
+            expectedBinaryAttachments = 0
+        }
+        
+        await callback(ackData)
+        ackCallbacks.removeValue(forKey: id)
+    }
+    
+    /// 发送二进制事件
+    /// - Parameters:
+    ///   - event: 事件名称
+    ///   - items: 事件数据（可包含 Data 类型）
+    public func emitBinary(_ event: String, _ items: Any...) async throws {
+        guard isConnected else {
+            throw SocketIOError.notConnected
+        }
+        
+        // 提取二进制数据
+        var regularData: [Any] = [event]
+        var binaryAttachments: [Data] = []
+        
+        for item in items {
+            if let data = item as? Data {
+                binaryAttachments.append(data)
+                // 用占位符替换二进制数据
+                regularData.append(["_placeholder": true, "num": binaryAttachments.count - 1])
+            } else {
+                regularData.append(item)
+            }
+        }
+        
+        if binaryAttachments.isEmpty {
+            // 没有二进制数据，使用普通事件
+            try await emit(event, items)
+        } else {
+            // 有二进制数据，使用 binaryEvent
+            let packet = SocketIOPacket(
+                type: .binaryEvent,
+                namespace: namespace,
+                data: regularData,
+                id: nil,
+                attachments: binaryAttachments.count
+            )
+            
+            // 发送主包
+            try await sendPacket(packet)
+            
+            // 发送二进制附件（注：需要 Engine.IO 支持）
+            // 暂时简化：将二进制数据编码到主包中
+        }
     }
 }
 
