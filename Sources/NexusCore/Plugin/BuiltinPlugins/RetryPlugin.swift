@@ -43,6 +43,11 @@ public actor RetryPlugin: NexusPlugin {
     /// 重试代理
     public weak var delegate: RetryPluginDelegate?
     
+    /// 设置代理
+    public func setDelegate(_ delegate: RetryPluginDelegate?) {
+        self.delegate = delegate
+    }
+    
     // MARK: - Initialization
     
     public init(
