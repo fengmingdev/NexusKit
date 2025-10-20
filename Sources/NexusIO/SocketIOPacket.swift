@@ -26,7 +26,7 @@ public struct SocketIOPacket: Sendable {
     /// 命名空间（默认为 "/"）
     public let namespace: String
     
-    /// 数据负载
+    /// 数据负载（使用@unchecked Sendable以支持任意 JSON 类型）
     public let data: [Any]?
     
     /// 确认ID（用于request-response模式）

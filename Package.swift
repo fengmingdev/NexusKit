@@ -32,11 +32,11 @@ let package = Package(
             targets: ["NexusCore", "NexusWebSocket"]
         ),
 
-        // Socket.IO module (暂未实现)
-        // .library(
-        //     name: "NexusIO",
-        //     targets: ["NexusCore", "NexusIO"]
-        // ),
+        // Socket.IO module
+        .library(
+            name: "NexusIO",
+            targets: ["NexusCore", "NexusWebSocket", "NexusIO"]
+        ),
 
         // Security module (TLS + Proxy) (暂未实现)
         // .library(
@@ -50,8 +50,8 @@ let package = Package(
             targets: [
                 "NexusCore",
                 "NexusTCP",
-                "NexusWebSocket"
-                // "NexusIO",
+                "NexusWebSocket",
+                "NexusIO"
                 // "NexusSecure"
             ]
         )
@@ -127,14 +127,14 @@ let package = Package(
             path: "Sources/NexusWebSocket"
         ),
 
-        // .target(
-        //     name: "NexusIO",
-        //     dependencies: [
-        //         "NexusCore",
-        //         "NexusWebSocket"
-        //     ],
-        //     path: "Sources/NexusIO"
-        // ),
+        .target(
+            name: "NexusIO",
+            dependencies: [
+                "NexusCore",
+                "NexusWebSocket"
+            ],
+            path: "Sources/NexusIO"
+        ),
 
         // .target(
         //     name: "NexusSecure",
@@ -191,11 +191,11 @@ let package = Package(
         //     path: "Tests/NexusWebSocketTests"
         // ),
 
-        // .testTarget(
-        //     name: "NexusIOTests",
-        //     dependencies: ["NexusIO"],
-        //     path: "Tests/NexusIOTests"
-        // ),
+        .testTarget(
+            name: "NexusIOTests",
+            dependencies: ["NexusIO"],
+            path: "Tests/NexusIOTests"
+        ),
 
         // .testTarget(
         //     name: "MiddlewareTests",
