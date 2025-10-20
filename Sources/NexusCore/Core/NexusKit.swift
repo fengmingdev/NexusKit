@@ -90,9 +90,6 @@ public struct GlobalConfiguration: Sendable {
     /// 是否启用性能指标
     public var enableMetrics: Bool = false
 
-    /// 日志级别
-    public var logLevel: LogLevel = .info
-
     /// 默认心跳间隔（秒）
     public var defaultHeartbeatInterval: TimeInterval = 30
 
@@ -102,22 +99,6 @@ public struct GlobalConfiguration: Sendable {
     public init() {
         // 默认使用指数退避重连策略
         self.defaultReconnectionStrategy = ExponentialBackoffStrategy()
-    }
-}
-
-// MARK: - Log Level
-
-/// 日志级别
-public enum LogLevel: Int, Sendable, Comparable {
-    case verbose = 0
-    case debug = 1
-    case info = 2
-    case warning = 3
-    case error = 4
-    case none = 5
-
-    public static func < (lhs: LogLevel, rhs: LogLevel) -> Bool {
-        lhs.rawValue < rhs.rawValue
     }
 }
 

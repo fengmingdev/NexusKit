@@ -4,15 +4,15 @@
 //
 //  Created by NexusKit Contributors
 //
+//  使用统一日志系统的日志中间件
 
 import Foundation
-import OSLog
 
 // MARK: - Logging Middleware
 
 /// 日志中间件
 ///
-/// 记录所有发送和接收的数据，用于调试和监控。
+/// 记录所有发送和接收的数据,用于调试和监控。
 ///
 /// ## 功能特性
 ///
@@ -21,7 +21,7 @@ import OSLog
 /// - 时间戳
 /// - 连接信息
 /// - 支持自定义日志级别
-/// - 使用 OSLog 进行高性能日志记录
+/// - 使用统一日志系统
 ///
 /// ## 使用示例
 ///
@@ -36,7 +36,7 @@ import OSLog
 /// ### 自定义配置
 /// ```swift
 /// let logger = LoggingMiddleware(
-///     level: .debug,
+///     logLevel: .debug,
 ///     logData: true,          // 记录数据内容（仅开发环境）
 ///     maxDataLength: 200      // 最多显示 200 字节
 /// )
@@ -52,7 +52,6 @@ import OSLog
 /// [NexusKit][Outgoing] Connection: tcp-1, Size: 1024 bytes
 /// [NexusKit][Incoming] Connection: tcp-1, Size: 2048 bytes
 /// ```
-@available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
 public struct LoggingMiddleware: Middleware {
     // MARK: - Properties
 
@@ -60,7 +59,7 @@ public struct LoggingMiddleware: Middleware {
     public let priority: Int
 
     /// 日志级别
-    private let level: LogLevel
+    private let logLevel: LogLevel
 
     /// 是否记录数据内容
     private let logData: Bool
@@ -68,50 +67,36 @@ public struct LoggingMiddleware: Middleware {
     /// 最大数据长度（记录时）
     private let maxDataLength: Int
 
-    /// OSLog 日志器
-    private let logger: Logger
-
-    // MARK: - Log Level
-
-    /// 日志级别
-    public enum LogLevel: Int, Comparable, Sendable {
-        case verbose = 0
-        case debug = 1
-        case info = 2
-        case warning = 3
-        case error = 4
-        case none = 5
-
-        public static func < (lhs: LogLevel, rhs: LogLevel) -> Bool {
-            lhs.rawValue < rhs.rawValue
-        }
-    }
+    /// 日志器名称
+    private let loggerName: String
 
     // MARK: - Initialization
 
     /// 初始化日志中间件
     /// - Parameters:
-    ///   - level: 日志级别，默认为 `.info`
+    ///   - logLevel: 日志级别，默认为 `.info`
     ///   - logData: 是否记录数据内容，默认为 `false`
     ///   - maxDataLength: 记录数据内容时的最大长度，默认为 100 字节
     ///   - priority: 中间件优先级，默认为 10（高优先级）
+    ///   - loggerName: 日志器名称，默认为 "NexusKit.Network"
     public init(
-        level: LogLevel = .info,
+        logLevel: LogLevel = .info,
         logData: Bool = false,
         maxDataLength: Int = 100,
-        priority: Int = 10
+        priority: Int = 10,
+        loggerName: String = "NexusKit.Network"
     ) {
-        self.level = level
+        self.logLevel = logLevel
         self.logData = logData
         self.maxDataLength = maxDataLength
         self.priority = priority
-        self.logger = Logger(subsystem: "com.nexuskit", category: "network")
+        self.loggerName = loggerName
     }
 
     // MARK: - Middleware Protocol
 
     public func handleOutgoing(_ data: Data, context: MiddlewareContext) async throws -> Data {
-        guard level <= .info else { return data }
+        guard logLevel <= .info else { return data }
 
         let message = formatMessage(
             direction: "Outgoing",
@@ -121,24 +106,12 @@ public struct LoggingMiddleware: Middleware {
             data: logData ? data : nil
         )
 
-        switch level {
-        case .verbose, .debug:
-            logger.debug("\(message, privacy: .public)")
-        case .info:
-            logger.info("\(message, privacy: .public)")
-        case .warning:
-            logger.warning("\(message, privacy: .public)")
-        case .error:
-            logger.error("\(message, privacy: .public)")
-        case .none:
-            break
-        }
-
+        await logMessage(message, level: logLevel)
         return data
     }
 
     public func handleIncoming(_ data: Data, context: MiddlewareContext) async throws -> Data {
-        guard level <= .info else { return data }
+        guard logLevel <= .info else { return data }
 
         let message = formatMessage(
             direction: "Incoming",
@@ -148,40 +121,23 @@ public struct LoggingMiddleware: Middleware {
             data: logData ? data : nil
         )
 
-        switch level {
-        case .verbose, .debug:
-            logger.debug("\(message, privacy: .public)")
-        case .info:
-            logger.info("\(message, privacy: .public)")
-        case .warning:
-            logger.warning("\(message, privacy: .public)")
-        case .error:
-            logger.error("\(message, privacy: .public)")
-        case .none:
-            break
-        }
-
+        await logMessage(message, level: logLevel)
         return data
     }
 
     public func onConnect(connection: any Connection) async {
-        guard level <= .info else { return }
-
-        let connectionId = connection.id
-        logger.info("🟢 [Connected] \(connectionId, privacy: .public)")
+        guard logLevel <= .info else { return }
+        await logMessage("🟢 [Connected] \(connection.id)", level: .info)
     }
 
     public func onDisconnect(connection: any Connection, reason: DisconnectReason) async {
-        guard level <= .info else { return }
-
-        let connectionId = connection.id
-        logger.info("🔴 [Disconnected] \(connectionId, privacy: .public), Reason: \(String(describing: reason), privacy: .public)")
+        guard logLevel <= .info else { return }
+        await logMessage("🔴 [Disconnected] \(connection.id), Reason: \(reason)", level: .info)
     }
 
     public func onError(error: Error, context: MiddlewareContext) async {
-        guard level <= .error else { return }
-
-        logger.error("⚠️ [Error] Connection: \(context.connectionId, privacy: .public), Error: \(error.localizedDescription, privacy: .public)")
+        guard logLevel <= .error else { return }
+        await logMessage("⚠️ [Error] Connection: \(context.connectionId), Error: \(error.localizedDescription)", level: .error, error: error)
     }
 
     // MARK: - Private Methods
@@ -209,6 +165,15 @@ public struct LoggingMiddleware: Middleware {
         }
 
         return message
+    }
+
+    private func logMessage(_ message: String, level: LogLevel, error: Error? = nil) async {
+        await log(
+            level: level,
+            message,
+            error: error,
+            logger: loggerName
+        )
     }
 }
 
