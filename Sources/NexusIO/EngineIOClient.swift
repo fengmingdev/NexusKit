@@ -35,7 +35,7 @@ public actor EngineIOClient {
     private var messageHandler: (@Sendable (String) -> Void)?
     
     /// 关闭处理器
-    private var closeHandler: (() -> Void)?
+    private var closeHandler: (@Sendable () -> Void)?
     
     /// URL
     private let url: URL
@@ -115,7 +115,7 @@ public actor EngineIOClient {
     }
     
     /// 设置关闭处理器
-    public func setCloseHandler(_ handler: @escaping () -> Void) {
+    public func setCloseHandler(_ handler: @escaping @Sendable () -> Void) {
         self.closeHandler = handler
     }
     
@@ -249,16 +249,20 @@ public actor EngineIOClient {
 /// Engine.IO 配置
 public struct EngineIOConfiguration: Sendable {
     /// 路径
-    public var path: String = "/socket.io/"
+    public var path: String
     
     /// 查询参数
-    public var query: [String: String] = [:]
+    public var query: [String: String]
     
     /// 额外头部
-    public var extraHeaders: [String: String] = [:]
+    public var extraHeaders: [String: String]
     
     /// 默认配置
     public static let `default` = EngineIOConfiguration()
     
-    public init() {}
+    public init(path: String = "/socket.io/", query: [String: String] = [:], extraHeaders: [String: String] = [:]) {
+        self.path = path
+        self.query = query
+        self.extraHeaders = extraHeaders
+    }
 }
