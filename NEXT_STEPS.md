@@ -1,15 +1,36 @@
 # NexusKit 下一步开发计划
 
-**更新日期**: 2025-10-17  
-**当前状态**: Swift 6 并发迁移完成 ✅ | 单元测试修复完成 ✅  
+**更新日期**: 2025-10-20  
+**当前状态**: Swift 6 并发迁移完成 ✅ | 单元测试修复完成 ✅ | 测试基础设施已建立 ✅  
 **构建状态**: Build complete! (1.19s) - 无警告，无错误 ✅  
-**测试状态**: 核心测试通过 ✅ (ConnectionStateTests: 11/11, MiddlewareTests: 全部, TCPConnectionTests: 18/22)
+**测试状态**: 核心测试通过 ✅ (ConnectionStateTests: 11/11, MiddlewareTests: 全部, TCPConnectionTests: 18/22)  
+**测试服务器**: TCP ✅ | WebSocket ✅ | Socket.IO ✅
 
 ---
 
 ## 📋 优先级任务
 
 ### P0 - 紧急任务（立即处理）
+
+#### 0. 测试基础设施验证 🟢
+**状态**: 已完成 ✅  
+**完成时间**: 2025-10-20  
+**成果**: 
+- ✅ 创建测试服务器 (TCP, WebSocket, Socket.IO)
+- ✅ 编写测试服务器文档
+- ✅ 创建测试方案文档 (TESTING_PLAN.md)
+- ✅ 配置自动化测试脚本
+
+**测试服务器说明**:
+```bash
+cd TestServers
+npm install
+npm run all  # 启动所有测试服务器
+```
+
+**详细文档**: 见 `TESTING_PLAN.md` 和 `TestServers/README.md`
+
+---
 
 #### 1. 修复剩余测试问题 🟡
 **状态**: 部分测试失败  

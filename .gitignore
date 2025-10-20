@@ -115,3 +115,10 @@ coverage.lcov
 *.tmp
 *.temp
 *.log
+
+# Node.js (TestServers)
+TestServers/node_modules/
+TestServers/package-lock.json
+TestServers/.npm/
+TestServers/*.log
+TestServers/.env

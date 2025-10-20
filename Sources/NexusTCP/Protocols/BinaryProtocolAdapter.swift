@@ -73,27 +73,36 @@ public final class BinaryProtocolAdapter: ProtocolAdapter, @unchecked Sendable {
         // 3. 生成请求 ID
         let requestId = requestMap.generateRequestId()
 
-        // 4. 获取功能 ID（从上下文或消息类型）
-        let functionId = context.metadata["functionId"] as? UInt32 ?? 0
+        // 4. 获取功能 ID（从上下文元数据中解析）
+        let functionId: UInt32
+        if let fidString = context.metadata["functionId"],
+           let fid = UInt32(fidString) {
+            functionId = fid
+        } else {
+            functionId = 0
+        }
 
-        // 5. 构建 Header（20 字节）
-        var headerData = Data()
-        headerData.reserveCapacity(20)
-
-        let totalLength = UInt32(20 + bodyData.count)
-        headerData.appendBigEndian(totalLength)          // 0-3: 总长度
-        headerData.appendBigEndian(protocolTag)           // 4-5: 协议标签
-        headerData.appendBigEndian(protocolVersion)       // 6-7: 版本
-        headerData.appendBigEndian(typeFlags)             // 8: 类型标志
-        headerData.appendBigEndian(UInt8(0))              // 9: 响应标志（0=请求）
-        headerData.appendBigEndian(requestId)             // 10-13: 请求ID
-        headerData.appendBigEndian(functionId)            // 14-17: 功能ID
-        headerData.appendBigEndian(UInt32(0))             // 18-21: 响应码（请求时为0）
-
-        // 6. 拼接：长度前缀 + header + body
+        // 5. 构建完整消息 = [4字节Len] + [20字节Header] + [Body]
+        // Header格式: Tag(2) + Ver(2) + Tp(1) + Res(1) + Qid(4) + Fid(4) + Code(4) + Dh(2)
+        let totalLength = UInt32(20 + bodyData.count)  // Len = Header(20) + Body
+        
         var result = Data()
+        result.reserveCapacity(Int(totalLength) + 4)
+        
+        // [4字节] Len
         result.appendBigEndian(totalLength)
-        result.append(headerData)
+        
+        // [20字节] Header
+        result.appendBigEndian(protocolTag)           // 4-5: Tag (0x7A5A)
+        result.appendBigEndian(protocolVersion)       // 6-7: Ver
+        result.appendBigEndian(typeFlags)             // 8: Tp (类型标志)
+        result.appendBigEndian(UInt8(0))              // 9: Res (0=请求, 1=响应)
+        result.appendBigEndian(requestId)             // 10-13: Qid (请求ID)
+        result.appendBigEndian(functionId)            // 14-17: Fid (功能ID)
+        result.appendBigEndian(UInt32(0))             // 18-21: Code (错误码，请求时为0)
+        result.appendBigEndian(UInt16(0))             // 22-23: Dh (保留字段)
+        
+        // Body
         result.append(bodyData)
 
         // 7. 注册请求（用于响应匹配）
@@ -171,23 +180,24 @@ public final class BinaryProtocolAdapter: ProtocolAdapter, @unchecked Sendable {
     // MARK: - Heartbeat
 
     public func createHeartbeat() async throws -> Data {
-        // 构建空心跳消息
-        var headerData = Data()
-        headerData.reserveCapacity(20)
-
-        let totalLength: UInt32 = 20 // 只有 header，无 body
-        headerData.appendBigEndian(totalLength)
-        headerData.appendBigEndian(protocolTag)
-        headerData.appendBigEndian(protocolVersion)
-        headerData.appendBigEndian(UInt8(0x01))     // 设置 idle 标志
-        headerData.appendBigEndian(UInt8(0))        // 请求
-        headerData.appendBigEndian(UInt32(0))       // 心跳无需 requestId
-        headerData.appendBigEndian(UInt32(0xFFFF))  // 心跳专用 functionId
-        headerData.appendBigEndian(UInt32(0))
-
+        // 构建空心跳消息：[4字节Len] + [20字节Header]
+        let totalLength: UInt32 = 20 // Header长度，无Body
+        
         var result = Data()
+        result.reserveCapacity(24)
+        
+        // [4字节] Len
         result.appendBigEndian(totalLength)
-        result.append(headerData)
+        
+        // [20字节] Header
+        result.appendBigEndian(protocolTag)          // 4-5: Tag (0x7A5A)
+        result.appendBigEndian(protocolVersion)      // 6-7: Ver
+        result.appendBigEndian(UInt8(0x01))          // 8: Tp (idle标志)
+        result.appendBigEndian(UInt8(0))             // 9: Res (0=请求)
+        result.appendBigEndian(UInt32(0))            // 10-13: Qid
+        result.appendBigEndian(UInt32(0xFFFF))       // 14-17: Fid (心跳标记)
+        result.appendBigEndian(UInt32(0))            // 18-21: Code
+        result.appendBigEndian(UInt16(0))            // 22-23: Dh
 
         return result
     }
@@ -200,6 +210,8 @@ public final class BinaryProtocolAdapter: ProtocolAdapter, @unchecked Sendable {
         }
 
         // 读取 Header 字段（大端序）
+        // 格式: [4字节Len] + [Tag(2) + Ver(2) + Tp(1) + Res(1) + Qid(4) + Fid(4) + Code(4) + Dh(2)]
+        
         guard let length = data.readBigEndianUInt32(at: 0) else {
             throw NexusError.invalidMessageFormat(reason: "Invalid length field")
         }
@@ -235,6 +247,9 @@ public final class BinaryProtocolAdapter: ProtocolAdapter, @unchecked Sendable {
         guard let responseCode = data.readBigEndianUInt32(at: 18) else {
             throw NexusError.invalidMessageFormat(reason: "Invalid response code")
         }
+        
+        // Dh (保留字段) at 22-23, 我们可以选择读取或忽略
+        // let dh = data.readBigEndianUInt16(at: 22)
 
         let bodyLength = Int(length) - 20
 

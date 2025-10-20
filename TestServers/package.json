@@ -1,0 +1,19 @@
+{
+  "name": "nexuskit-test-servers",
+  "version": "1.0.0",
+  "description": "Test servers for NexusKit",
+  "scripts": {
+    "tcp": "node tcp_server.js",
+    "ws": "node websocket_server.js",
+    "io": "node socketio_server.js",
+    "all": "concurrently \"npm run tcp\" \"npm run ws\" \"npm run io\"",
+    "test": "npm run all"
+  },
+  "dependencies": {
+    "socket.io": "^4.5.0",
+    "ws": "^8.13.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.0"
+  }
+}

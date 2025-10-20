@@ -204,6 +204,31 @@ print("接收: \(metricsMiddleware.metrics.totalBytesReceived) bytes")
 
 ---
 
+## 🧪 Testing
+
+### Quick Start
+
+```bash
+# 1. Start test servers
+cd TestServers
+npm install
+./start_all.sh
+
+# 2. Run tests (in a new terminal)
+cd ..
+swift test
+```
+
+### Test Coverage
+
+- **NexusCore**: 70% (target: 80%)
+- **NexusTCP**: 50% (target: 80%)
+- **NexusWebSocket**: 0% (target: 80%)
+
+See **[TESTING_PLAN.md](TESTING_PLAN.md)** for detailed testing strategy.
+
+---
+
 ## 📚 Documentation
 
 - **[Getting Started Guide](Documentation/Guides/GettingStarted.md)** - 快速开始

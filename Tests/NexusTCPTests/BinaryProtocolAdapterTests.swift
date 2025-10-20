@@ -66,7 +66,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(data.count, 24)
 
         // Function ID is at offset 14-17 in the header (after 4-byte length prefix)
-        let functionId = data.readBigEndianUInt32(at: 18) // 4 + 14
+        let functionId = data.readBigEndianUInt32(at: 14) // offset 14-17
         XCTAssertEqual(functionId, 12345)
     }
 
@@ -152,10 +152,9 @@ final class BinaryProtocolAdapterTests: XCTestCase {
         let encContext = EncodingContext(connectionId: "test")
         let encoded = try adapter.encode(original, context: encContext)
 
-        // Decode (skip the 4-byte length prefix)
-        let messageData = encoded.dropFirst(4)
-        let decContext = DecodingContext(connectionId: "test", dataSize: Int(messageData.count))
-        let decoded: TestMessage = try adapter.decode(messageData, as: TestMessage.self, context: decContext)
+        // Decode (使用完整数据，包括长度前缀)
+        let decContext = DecodingContext(connectionId: "test", dataSize: encoded.count)
+        let decoded: TestMessage = try adapter.decode(encoded, as: TestMessage.self, context: decContext)
 
         XCTAssertEqual(decoded, original)
     }
@@ -186,6 +185,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
 
     func testDecodingInvalidProtocolTag() throws {
         // Create data with invalid protocol tag
+        // 格式: [4字节Len] + [Tag(2) + Ver(2) + Tp(1) + Res(1) + Qid(4) + Fid(4) + Code(4) + Dh(2)]
         var data = Data()
         data.appendBigEndian(UInt32(20)) // Length
         data.appendBigEndian(UInt16(0xFFFF)) // Invalid tag
@@ -195,6 +195,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
         data.appendBigEndian(UInt32(1)) // Request ID
         data.appendBigEndian(UInt32(0)) // Function ID
         data.appendBigEndian(UInt32(0)) // Response code
+        data.appendBigEndian(UInt16(0)) // Dh (保留字段)
 
         struct TestMessage: Codable {
             let text: String
@@ -238,7 +239,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
         XCTAssertEqual(typeFlags! & 0x01, 0x01) // Idle flag set
 
         // Verify function ID is 0xFFFF (heartbeat marker)
-        let functionId = heartbeat.readBigEndianUInt32(at: 18)
+        let functionId = heartbeat.readBigEndianUInt32(at: 14)
         XCTAssertEqual(functionId, 0xFFFF)
     }
 
@@ -302,10 +303,9 @@ final class BinaryProtocolAdapterTests: XCTestCase {
         let encContext = EncodingContext(connectionId: "test")
         let encoded = try adapter.encode(original, context: encContext)
 
-        // Decode
-        let messageData = encoded.dropFirst(4)
-        let decContext = DecodingContext(connectionId: "test", dataSize: Int(messageData.count))
-        let decoded: TestMessage = try adapter.decode(messageData, as: TestMessage.self, context: decContext)
+        // Decode (使用完整数据)
+        let decContext = DecodingContext(connectionId: "test", dataSize: encoded.count)
+        let decoded: TestMessage = try adapter.decode(encoded, as: TestMessage.self, context: decContext)
 
         XCTAssertEqual(decoded, original)
     }
@@ -336,10 +336,9 @@ final class BinaryProtocolAdapterTests: XCTestCase {
         let encContext = EncodingContext(connectionId: "test")
         let encoded = try adapter.encode(original, context: encContext)
 
-        // Decode
-        let messageData = encoded.dropFirst(4)
-        let decContext = DecodingContext(connectionId: "test", dataSize: Int(messageData.count))
-        let decoded: TestMessage = try adapter.decode(messageData, as: TestMessage.self, context: decContext)
+        // Decode (使用完整数据)
+        let decContext = DecodingContext(connectionId: "test", dataSize: encoded.count)
+        let decoded: TestMessage = try adapter.decode(encoded, as: TestMessage.self, context: decContext)
 
         XCTAssertEqual(decoded, original)
     }
@@ -348,6 +347,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
 
     func testHandleIncomingResponseEvent() async throws {
         // Create a response message (responseFlag = 1)
+        // 格式: [4字节Len] + [Tag(2) + Ver(2) + Tp(1) + Res(1) + Qid(4) + Fid(4) + Code(4) + Dh(2)]
         var data = Data()
         data.appendBigEndian(UInt32(20)) // Length (header only)
         data.appendBigEndian(UInt16(0x7A5A)) // Protocol tag
@@ -357,6 +357,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
         data.appendBigEndian(UInt32(123)) // Request ID
         data.appendBigEndian(UInt32(0)) // Function ID
         data.appendBigEndian(UInt32(0)) // Response code
+        data.appendBigEndian(UInt16(0)) // Dh
 
         let events = try await adapter.handleIncoming(data)
 
@@ -379,6 +380,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
         data.appendBigEndian(UInt32(0)) // Request ID
         data.appendBigEndian(UInt32(0xFFFF)) // Function ID = heartbeat
         data.appendBigEndian(UInt32(0)) // Response code
+        data.appendBigEndian(UInt16(0)) // Dh
 
         let events = try await adapter.handleIncoming(data)
 
@@ -405,6 +407,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
         data.appendBigEndian(UInt32(0)) // Request ID
         data.appendBigEndian(UInt32(100)) // Function ID (not 0xFFFF)
         data.appendBigEndian(UInt32(0)) // Response code
+        data.appendBigEndian(UInt16(0)) // Dh
 
         let events = try await adapter.handleIncoming(data)
 
@@ -419,7 +422,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
     func testHandleIncomingIncompleteMessage() async {
         // Create incomplete message (header says body length but it's missing)
         var data = Data()
-        data.appendBigEndian(UInt32(100)) // Length claims 100 bytes
+        data.appendBigEndian(UInt32(100)) // Length claims 100 bytes (20 header + 80 body)
         data.appendBigEndian(UInt16(0x7A5A)) // Protocol tag
         data.appendBigEndian(UInt16(1)) // Version
         data.appendBigEndian(UInt8(0)) // Type flags
@@ -427,6 +430,7 @@ final class BinaryProtocolAdapterTests: XCTestCase {
         data.appendBigEndian(UInt32(0)) // Request ID
         data.appendBigEndian(UInt32(0)) // Function ID
         data.appendBigEndian(UInt32(0)) // Response code
+        data.appendBigEndian(UInt16(0)) // Dh
         // Body is missing (should be 80 more bytes)
 
         do {
@@ -459,10 +463,10 @@ final class BinaryProtocolAdapterTests: XCTestCase {
         let data2 = try adapter.encode(message, context: context)
         let data3 = try adapter.encode(message, context: context)
 
-        // Extract request IDs (at offset 10-13, add 4 for length prefix)
-        let reqId1 = data1.readBigEndianUInt32(at: 14)
-        let reqId2 = data2.readBigEndianUInt32(at: 14)
-        let reqId3 = data3.readBigEndianUInt32(at: 14)
+        // Extract request IDs (at offset 10-13 in header)
+        let reqId1 = data1.readBigEndianUInt32(at: 10)
+        let reqId2 = data2.readBigEndianUInt32(at: 10)
+        let reqId3 = data3.readBigEndianUInt32(at: 10)
 
         // Request IDs should be unique and incrementing
         XCTAssertNotEqual(reqId1, reqId2)
@@ -518,10 +522,9 @@ final class BinaryProtocolAdapterTests: XCTestCase {
         // Should still have header
         XCTAssertGreaterThanOrEqual(encoded.count, 24)
 
-        // Decode
-        let messageData = encoded.dropFirst(4)
-        let decContext = DecodingContext(connectionId: "test", dataSize: Int(messageData.count))
-        let decoded: EmptyMessage = try adapter.decode(messageData, as: EmptyMessage.self, context: decContext)
+        // Decode (使用完整数据)
+        let decContext = DecodingContext(connectionId: "test", dataSize: encoded.count)
+        let decoded: EmptyMessage = try adapter.decode(encoded, as: EmptyMessage.self, context: decContext)
 
         XCTAssertEqual(decoded, message)
     }
@@ -544,10 +547,9 @@ final class BinaryProtocolAdapterTests: XCTestCase {
         let totalLength = encoded.readBigEndianUInt32(at: 0)
         XCTAssertNotNil(totalLength)
 
-        // Decode
-        let messageData = encoded.dropFirst(4)
-        let decContext = DecodingContext(connectionId: "test", dataSize: Int(messageData.count))
-        let decoded: LargeMessage = try adapter.decode(messageData, as: LargeMessage.self, context: decContext)
+        // Decode (使用完整数据)
+        let decContext = DecodingContext(connectionId: "test", dataSize: encoded.count)
+        let decoded: LargeMessage = try adapter.decode(encoded, as: LargeMessage.self, context: decContext)
 
         XCTAssertEqual(decoded.data.count, largeData.count)
     }
