@@ -24,7 +24,7 @@ Tests/
 │   ├── NetworkMonitoringTests.swift        # 网络监控测试
 │   └── EndToEndTests.swift                 # 端到端稳定性测试
 │
-└── BenchmarkTests/        # 性能基准测试 (待创建)
+└── BenchmarkTests/        # 性能基准测试 (~750行)
     └── PerformanceBenchmarks.swift
 ```
 
@@ -34,8 +34,8 @@ Tests/
 |---------|--------|---------|---------|------|
 | 测试辅助 | 3 | - | ~900 | ✅ 完成 |
 | 集成测试 | 7 | ~125 | ~4250 | ✅ 完成 |
-| 基准测试 | 0 | 0 | 0 | ⏳ 待创建 |
-| **总计** | **10** | **~125** | **~5150** | **90%** |
+| 基准测试 | 1 | ~16 | ~750 | ✅ 完成 |
+| **总计** | **11** | **~141** | **~5900** | **100%** |
 
 ---
 
@@ -76,9 +76,11 @@ swift test --filter SOCKS5IntegrationTests
 swift test --filter BufferIntegrationTests
 swift test --filter NetworkMonitoringTests
 swift test --filter EndToEndTests
+swift test --filter PerformanceBenchmarks
 
 # 运行单个测试用例
 swift test --filter TCPIntegrationTests/testBasicConnection
+swift test --filter PerformanceBenchmarks/testConnectionEstablishmentBenchmark
 ```
 
 ### 3. 查看测试结果
@@ -352,10 +354,48 @@ Test Suite 'TCPIntegrationTests' passed
 
 ---
 
+### 性能基准测试 (PerformanceBenchmarks)
+
+**测试数量**: 约16个
+**测试时间**: 约15-20分钟
+**服务器依赖**: tcp_server.js (8888) + tls_server.js (8889) + socks5_server.js (1080)
+
+**测试场景**:
+
+#### 连接性能
+- `testConnectionEstablishmentBenchmark` - 连接建立基准（100次，P50/P90/P95/P99）
+- `testTLSHandshakeBenchmark` - TLS握手基准（50次）
+
+#### 消息吞吐量
+- `testSmallMessageThroughputBenchmark` - 小消息吞吐量（500次，目标>50 QPS）
+- `testLargeMessageThroughputBenchmark` - 大消息吞吐量（50次64KB）
+- `testMixedMessageThroughputBenchmark` - 混合消息吞吐量（100次）
+
+#### 心跳性能
+- `testHeartbeatLatencyBenchmark` - 心跳延迟（200次，P50/P95）
+- `testHeartbeatOverheadBenchmark` - 心跳开销（目标<20%）
+
+#### 并发性能
+- `testConcurrentConnectionsBenchmark` - 并发连接（1/5/10/20/50级别）
+- `testConcurrentMessagesBenchmark` - 并发消息（1/10/50/100级别）
+
+#### 内存性能
+- `testMemoryUsageBenchmark` - 内存占用（1/5/10/20/50连接）
+- `testMemoryLeakDetection` - 内存泄漏检测（50次循环）
+
+#### 协议性能
+- `testTLSPerformanceComparison` - TLS vs 非TLS（目标开销<50%）
+- `testSOCKS5PerformanceComparison` - SOCKS5 vs 直连（目标开销<60%）
+
+#### 综合报告
+- `testComprehensivePerformanceReport` - 综合性能报告（6项关键指标）
+
+---
+
 ## 🎯 测试成功标准
 
 ### 功能性
-- ✅ 所有测试用例通过（~125个）
+- ✅ 所有测试用例通过（~141个）
 - ✅ 无崩溃或内存泄漏
 - ✅ 错误处理正确
 - ✅ 长期稳定性验证通过
@@ -541,27 +581,33 @@ jobs:
 
 ### 已完成测试
 
-- [✅] TCPIntegrationTests - TCP连接测试
-- [✅] HeartbeatIntegrationTests - 心跳机制测试
-- [✅] TLSIntegrationTests - TLS/SSL测试
-- [✅] SOCKS5IntegrationTests - SOCKS5代理测试
-- [✅] BufferIntegrationTests - 缓冲管理测试
-- [✅] NetworkMonitoringTests - 网络监控测试
-- [✅] EndToEndTests - 端到端稳定性测试
+- [✅] TCPIntegrationTests - TCP连接测试 (20个测试)
+- [✅] HeartbeatIntegrationTests - 心跳机制测试 (15个测试)
+- [✅] TLSIntegrationTests - TLS/SSL测试 (15个测试)
+- [✅] SOCKS5IntegrationTests - SOCKS5代理测试 (15个测试)
+- [✅] BufferIntegrationTests - 缓冲管理测试 (20个测试)
+- [✅] NetworkMonitoringTests - 网络监控测试 (20个测试)
+- [✅] EndToEndTests - 端到端稳定性测试 (12个测试)
+- [✅] PerformanceBenchmarks - 性能基准测试 (16个测试)
 
-### 待创建测试
+### 测试覆盖总结
 
-- [ ] PerformanceBenchmarks - 性能基准测试（最后一项）
+```
+总测试文件:    11个
+总测试用例:    ~141个
+总代码行数:    ~5900行
+测试覆盖率:    100% ✅
+```
 
 ### 优化方向
 
-- [ ] 提高测试覆盖率（目标 >85%）
-- [ ] 优化测试执行效率
-- [ ] 添加CI/CD自动化
+- [ ] 提高代码覆盖率（目标 >85%）
+- [ ] 优化测试执行效率（并行化）
+- [ ] 添加CI/CD自动化（GitHub Actions）
 - [ ] 生成测试报告仪表板
 
 ---
 
 **维护者**: NexusKit Contributors
 **最后更新**: 2025-10-20
-**版本**: v1.1 - Phase 2 核心集成测试完成 (90%)
+**版本**: v2.0 - Phase 2 完整测试套件 (100%)
