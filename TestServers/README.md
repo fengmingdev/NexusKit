@@ -12,7 +12,25 @@
   - 消息回显
   - 协议头解析
 
-### 2. WebSocket 服务器 (websocket_server.js)
+### 2. TLS 服务器 (tls_server.js) ⭐ 新增
+- **端口**: 8889
+- **协议**: TLS/SSL + 二进制协议
+- **功能**:
+  - TLS 1.2/1.3 加密传输
+  - 自签名证书（测试用）
+  - 心跳响应
+  - 消息回显
+
+### 3. SOCKS5 代理服务器 (socks5_server.js) ⭐ 新增
+- **端口**: 1080
+- **协议**: SOCKS5 (RFC 1928)
+- **功能**:
+  - 无认证模式
+  - 用户名/密码认证（可选）
+  - IPv4/IPv6/域名支持
+  - CONNECT 命令支持
+
+### 4. WebSocket 服务器 (websocket_server.js)
 - **端口**: 8080
 - **协议**: WebSocket
 - **功能**:
@@ -20,7 +38,7 @@
   - Ping/Pong
   - 心跳
 
-### 3. Socket.IO 服务器 (socketio_server.js)
+### 5. Socket.IO 服务器 (socketio_server.js)
 - **端口**: 3000
 - **协议**: Socket.IO
 - **功能**:
@@ -53,11 +71,24 @@ chmod +x start_all.sh
 # TCP 服务器
 npm run tcp
 
+# TLS 服务器
+npm run tls
+
+# SOCKS5 代理服务器
+npm run socks5
+
 # WebSocket 服务器
 npm run ws
 
 # Socket.IO 服务器
 npm run io
+```
+
+### 集成测试专用
+
+```bash
+# 只启动集成测试需要的服务器 (TCP + TLS + SOCKS5)
+npm run integration
 ```
 
 ## 测试

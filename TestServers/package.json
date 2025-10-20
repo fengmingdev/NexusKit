@@ -4,9 +4,12 @@
   "description": "Test servers for NexusKit",
   "scripts": {
     "tcp": "node tcp_server.js",
+    "tls": "node tls_server.js",
+    "socks5": "node socks5_server.js",
     "ws": "node websocket_server.js",
     "io": "node socketio_server.js",
-    "all": "concurrently \"npm run tcp\" \"npm run ws\" \"npm run io\"",
+    "all": "concurrently \"npm run tcp\" \"npm run tls\" \"npm run socks5\" \"npm run ws\" \"npm run io\"",
+    "integration": "concurrently \"npm run tcp\" \"npm run tls\" \"npm run socks5\"",
     "test": "npm run all"
   },
   "dependencies": {
