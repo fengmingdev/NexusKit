@@ -63,6 +63,12 @@ public actor SocketIOClient {
     /// 确认回调映射
     private var ackCallbacks: [Int: ([Any]) async -> Void] = [:]
     
+    /// 命名空间映射
+    private var namespaces: [String: SocketIONamespace] = [:]
+    
+    /// 房间管理器
+    private var roomManager: SocketIORoom?
+    
     /// 当前命名空间
     private var namespace: String = "/"
     
@@ -82,6 +88,22 @@ public actor SocketIOClient {
         self.url = url
         self.configuration = configuration
         self.parser = SocketIOParser()
+        self.roomManager = nil
+    }
+    
+    // MARK: - Public Methods - 命名空间管理
+    
+    /// 获取或创建命名空间
+    /// - Parameter path: 命名空间路径
+    /// - Returns: 命名空间实例
+    public func socket(forNamespace path: String) -> SocketIONamespace {
+        if let existing = namespaces[path] {
+            return existing
+        }
+        
+        let namespace = SocketIONamespace(path: path, client: self)
+        namespaces[path] = namespace
+        return namespace
     }
     
     // MARK: - Public Methods - 连接管理
@@ -95,6 +117,11 @@ public actor SocketIOClient {
     /// 连接到服务器
     public func connect() async throws {
         guard !isConnected else { return }
+        
+        // 创建房间管理器
+        if roomManager == nil {
+            roomManager = SocketIORoom(client: self, namespace: namespace)
+        }
         
         // 创建Engine.IO客户端
         let engineConfig = EngineIOConfiguration(
@@ -141,6 +168,9 @@ public actor SocketIOClient {
         // 取消重连定时器
         reconnectTimer?.cancel()
         reconnectTimer = nil
+        
+        // 清理房间状态
+        await roomManager?.clear()
         
         // 发送断开包
         let disconnectPacket = SocketIOPacket.disconnect(namespace: namespace)
@@ -241,18 +271,40 @@ public actor SocketIOClient {
         }
     }
     
-    // MARK: - Private Methods
+    /// 获取房间管理器
+    /// - Returns: 房间管理器实例
+    public func rooms() -> SocketIORoom {
+        if roomManager == nil {
+            roomManager = SocketIORoom(client: self, namespace: namespace)
+        }
+        return roomManager!
+    }
     
-    /// 发送Socket.IO包
-    private func sendPacket(_ packet: SocketIOPacket) async throws {
+    // MARK: - Internal Methods
+    
+    /// 发送Socket.IO包（供命名空间使用）
+    internal func sendPacket(_ packet: SocketIOPacket) async throws {
         let encoded = try await parser.encode(packet)
         try await engineIO?.send(encoded)
     }
+    
+    // MARK: - Private Methods
     
     /// 处理Engine.IO消息
     private func handleEngineMessage(_ message: String) async {
         do {
             let packet = try await parser.decode(message)
+            
+            // 根据命名空间路由包
+            if packet.namespace != "/" {
+                // 非默认命名空间，转发到对应的命名空间处理
+                if let namespace = namespaces[packet.namespace] {
+                    await namespace.handlePacket(packet)
+                }
+                return
+            }
+            
+            // 默认命名空间，由客户端自己处理
             await handlePacket(packet)
         } catch {
             print("[SocketIO] 解析消息失败: \(error)")
