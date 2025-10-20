@@ -15,7 +15,7 @@ public actor BufferPool {
     // MARK: - Configuration
 
     /// Pool configuration
-    public struct Configuration {
+    public struct Configuration: Sendable {
         /// Maximum number of buffers per size tier
         public let maxBuffersPerTier: Int
 
