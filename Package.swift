@@ -38,11 +38,11 @@ let package = Package(
             targets: ["NexusCore", "NexusWebSocket", "NexusIO"]
         ),
 
-        // Security module (TLS + Proxy) (暂未实现)
-        // .library(
-        //     name: "NexusSecure",
-        //     targets: ["NexusCore", "NexusSecure"]
-        // ),
+        // Compatibility layer (NodeSocket adapter)
+        .library(
+            name: "NexusCompat",
+            targets: ["NexusCore", "NexusTCP", "NexusCompat"]
+        ),
 
         // Complete package (all modules)
         .library(
@@ -51,8 +51,8 @@ let package = Package(
                 "NexusCore",
                 "NexusTCP",
                 "NexusWebSocket",
-                "NexusIO"
-                // "NexusSecure"
+                "NexusIO",
+                "NexusCompat"
             ]
         )
 
@@ -136,11 +136,16 @@ let package = Package(
             path: "Sources/NexusIO"
         ),
 
-        // .target(
-        //     name: "NexusSecure",
-        //     dependencies: ["NexusCore"],
-        //     path: "Sources/NexusSecure"
-        // ),
+        // MARK: - Compatibility Layer
+
+        .target(
+            name: "NexusCompat",
+            dependencies: [
+                "NexusCore",
+                "NexusTCP"
+            ],
+            path: "Sources/NexusCompat"
+        ),
 
         // MARK: - Middleware Modules
 

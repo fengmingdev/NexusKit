@@ -46,6 +46,31 @@ public enum NexusError: Error, LocalizedError, Equatable {
     /// 无效的凭证
     case invalidCredentials
 
+    // MARK: - TLS/SSL Errors
+
+    /// TLS错误
+    case tlsError(reason: String)
+
+    /// TLS握手失败
+    case tlsHandshakeFailed
+
+    /// 证书加载失败
+    case certificateLoadFailed(reason: String)
+
+    /// 不受信任的证书
+    case untrustedCertificate
+
+    // MARK: - Proxy Errors
+
+    /// 代理连接失败
+    case proxyConnectionFailed(reason: String)
+
+    /// 代理认证失败
+    case proxyAuthenticationFailed
+
+    /// 不支持的代理类型
+    case unsupportedProxyType(String)
+
     // MARK: - Protocol Errors
 
     /// 协议错误
@@ -171,6 +196,27 @@ public enum NexusError: Error, LocalizedError, Equatable {
         case .invalidCredentials:
             return "Invalid credentials"
 
+        case .tlsError(let reason):
+            return "TLS error: \(reason)"
+
+        case .tlsHandshakeFailed:
+            return "TLS handshake failed"
+
+        case .certificateLoadFailed(let reason):
+            return "Certificate load failed: \(reason)"
+
+        case .untrustedCertificate:
+            return "Untrusted certificate"
+
+        case .proxyConnectionFailed(let reason):
+            return "Proxy connection failed: \(reason)"
+
+        case .proxyAuthenticationFailed:
+            return "Proxy authentication failed"
+
+        case .unsupportedProxyType(let type):
+            return "Unsupported proxy type: \(type)"
+
         case .protocolError(let message):
             return "Protocol error: \(message)"
 
@@ -266,6 +312,9 @@ public enum NexusError: Error, LocalizedError, Equatable {
              (.heartbeatTimeout, .heartbeatTimeout),
              (.certificateValidationFailed, .certificateValidationFailed),
              (.invalidCredentials, .invalidCredentials),
+             (.tlsHandshakeFailed, .tlsHandshakeFailed),
+             (.untrustedCertificate, .untrustedCertificate),
+             (.proxyAuthenticationFailed, .proxyAuthenticationFailed),
              (.requestTimeout, .requestTimeout),
              (.invalidResponse, .invalidResponse),
              (.bufferOverflow, .bufferOverflow),
@@ -287,8 +336,14 @@ public enum NexusError: Error, LocalizedError, Equatable {
 
         case (.authenticationFailed(let lhsReason), .authenticationFailed(let rhsReason)),
              (.protocolError(let lhsReason), .protocolError(let rhsReason)),
-             (.invalidConfiguration(let lhsReason), .invalidConfiguration(let rhsReason)):
+             (.invalidConfiguration(let lhsReason), .invalidConfiguration(let rhsReason)),
+             (.tlsError(let lhsReason), .tlsError(let rhsReason)),
+             (.certificateLoadFailed(let lhsReason), .certificateLoadFailed(let rhsReason)),
+             (.proxyConnectionFailed(let lhsReason), .proxyConnectionFailed(let rhsReason)):
             return lhsReason == rhsReason
+
+        case (.unsupportedProxyType(let lhsType), .unsupportedProxyType(let rhsType)):
+            return lhsType == rhsType
 
         case (.missingRequiredConfiguration(let lhsKey), .missingRequiredConfiguration(let rhsKey)):
             return lhsKey == rhsKey

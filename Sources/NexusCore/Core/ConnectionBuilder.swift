@@ -23,8 +23,8 @@ public final class ConnectionBuilder {
     private var connectTimeout: TimeInterval?
     private var readWriteTimeout: TimeInterval?
     private var heartbeatConfig: HeartbeatConfiguration?
-    private var tlsConfig: TLSConfiguration?
-    private var proxyConfig: ProxyConfiguration?
+    private var tlsConfig: LegacyTLSConfiguration?
+    private var proxyConfig: NexusCore.ProxyConfiguration?
     private var lifecycleHooks: LifecycleHooks = LifecycleHooks()
     private var customMetadata: [String: String] = [:]
 
@@ -135,7 +135,7 @@ public final class ConnectionBuilder {
     /// - Returns: 构建器实例
     @discardableResult
     public func enableTLS(certificate: TLSCertificate? = nil) -> Self {
-        self.tlsConfig = TLSConfiguration(
+        self.tlsConfig = LegacyTLSConfiguration(
             enabled: true,
             certificate: certificate
         )
@@ -200,7 +200,29 @@ public final class ConnectionBuilder {
     // MARK: - Private Methods
 
     private func buildConfiguration() -> ConnectionConfiguration {
-        ConnectionConfiguration(
+        // 转换 LegacyTLSConfiguration 到新的 TLSConfiguration
+        let newTLSConfig: NexusCore.TLSConfiguration?
+        if let legacy = tlsConfig {
+            if legacy.enabled {
+                // 创建简单的 TLS 配置（使用系统默认）
+                newTLSConfig = NexusCore.TLSConfiguration(
+                    enabled: true,
+                    version: .automatic,
+                    p12Certificate: nil,
+                    validationPolicy: legacy.allowSelfSigned ? .disabled : .system,
+                    cipherSuites: .default,
+                    serverName: nil,
+                    alpnProtocols: nil,
+                    allowSelfSigned: legacy.allowSelfSigned
+                )
+            } else {
+                newTLSConfig = nil
+            }
+        } else {
+            newTLSConfig = nil
+        }
+
+        return ConnectionConfiguration(
             id: connectionId ?? UUID().uuidString,
             endpoint: endpoint,
             protocolAdapter: protocolAdapter,
@@ -213,7 +235,7 @@ public final class ConnectionBuilder {
                 timeout: globalConfig.defaultHeartbeatTimeout,
                 enabled: true
             ),
-            tlsConfig: tlsConfig,
+            tlsConfig: newTLSConfig,
             proxyConfig: proxyConfig,
             lifecycleHooks: lifecycleHooks,
             metadata: customMetadata
@@ -233,8 +255,8 @@ public struct ConnectionConfiguration: Sendable {
     public let connectTimeout: TimeInterval
     public let readWriteTimeout: TimeInterval
     public let heartbeatConfig: HeartbeatConfiguration
-    public let tlsConfig: TLSConfiguration?
-    public let proxyConfig: ProxyConfiguration?
+    public let tlsConfig: NexusCore.TLSConfiguration? // 使用增强的TLSConfiguration
+    public let proxyConfig: NexusCore.ProxyConfiguration? // 使用增强的ProxyConfiguration
     public let lifecycleHooks: LifecycleHooks
     public let metadata: [String: String]
 
@@ -247,8 +269,8 @@ public struct ConnectionConfiguration: Sendable {
         connectTimeout: TimeInterval,
         readWriteTimeout: TimeInterval,
         heartbeatConfig: HeartbeatConfiguration,
-        tlsConfig: TLSConfiguration?,
-        proxyConfig: ProxyConfiguration?,
+        tlsConfig: NexusCore.TLSConfiguration?,
+        proxyConfig: NexusCore.ProxyConfiguration?,
         lifecycleHooks: LifecycleHooks,
         metadata: [String: String]
     ) {
@@ -291,10 +313,11 @@ public struct HeartbeatConfiguration: Sendable {
     }
 }
 
-// MARK: - TLS Configuration
+// MARK: - TLS Configuration (Legacy)
 
-/// TLS 配置
-public struct TLSConfiguration: Sendable {
+/// TLS 配置 (旧版 - 保留向后兼容)
+/// 新代码请使用 NexusCore/Security/TLSConfiguration.swift
+public struct LegacyTLSConfiguration: Sendable {
     /// 是否启用 TLS
     public let enabled: Bool
 
@@ -335,40 +358,6 @@ public struct TLSCertificate: Sendable {
 }
 
 // MARK: - Proxy Configuration
-
-/// 代理配置
-public struct ProxyConfiguration: Sendable {
-    /// 代理类型
-    public let type: ProxyType
-
-    /// 代理主机
-    public let host: String
-
-    /// 代理端口
-    public let port: UInt16
-
-    /// 用户名
-    public let username: String?
-
-    /// 密码
-    public let password: String?
-
-    public enum ProxyType: Sendable {
-        case socks5
-        case http
-    }
-
-    public init(
-        type: ProxyType,
-        host: String,
-        port: UInt16,
-        username: String? = nil,
-        password: String? = nil
-    ) {
-        self.type = type
-        self.host = host
-        self.port = port
-        self.username = username
-        self.password = password
-    }
-}
+// 代理配置已移至 NexusCore/Proxy/ProxyConfiguration.swift
+// 此处保留类型别名以保持向后兼容
+public typealias OldProxyConfiguration = ProxyConfiguration
