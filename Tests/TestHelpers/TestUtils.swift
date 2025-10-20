@@ -171,6 +171,30 @@ public enum TestUtils {
         }
     }
 
+    /// 接收消息（不发送）
+    public static func receiveMessage(
+        connection: TCPConnection,
+        timeout: TimeInterval = TestFixtures.shortTimeout
+    ) async throws -> Data {
+        var receivedData: Data?
+
+        connection.on(.message) { data in
+            receivedData = data
+        }
+
+        // 等待响应
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline && receivedData == nil {
+            try await Task.sleep(nanoseconds: 100_000_000) // 100ms
+        }
+
+        guard let data = receivedData else {
+            throw TestError.timeout
+        }
+
+        return data
+    }
+
     // MARK: - 性能测量
 
     /// 测量操作执行时间
@@ -227,6 +251,29 @@ public enum TestUtils {
     }
 
     // MARK: - 内存测试
+
+    /// 获取当前内存使用
+    public static func currentMemoryUsage() -> UInt64 {
+        var info = mach_task_basic_info()
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size) / 4
+
+        let kerr = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
+                task_info(
+                    mach_task_self_,
+                    task_flavor_t(MACH_TASK_BASIC_INFO),
+                    $0,
+                    &count
+                )
+            }
+        }
+
+        if kerr == KERN_SUCCESS {
+            return info.resident_size
+        }
+
+        return 0
+    }
 
     /// 测量内存使用
     public static func measureMemoryUsage() -> UInt64 {
