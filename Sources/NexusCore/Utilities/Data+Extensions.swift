@@ -143,9 +143,10 @@ public extension Data {
     // MARK: - Compression (requires Compression framework)
 
     #if canImport(Compression)
-    /// GZIP 压缩
+    /// ZLIB 压缩（兼容 GZIP 名称）
     /// - Returns: 压缩后的数据
     /// - Throws: 压缩失败
+    /// - Note: 使用 ZLIB 格式，不是真正的 GZIP 格式。ZLIB 和 GZIP 都使用 DEFLATE 算法，但头部不同。
     func gzipped() throws -> Data {
         try compressed(using: COMPRESSION_ZLIB)
     }
@@ -173,64 +174,84 @@ public extension Data {
 
     /// 使用指定算法压缩
     private func compressed(using algorithm: compression_algorithm) throws -> Data {
-        let bufferSize = count
-        var compressedData = Data(count: bufferSize)
+        guard !isEmpty else {
+            // 空数据特殊处理
+            return Data()
+        }
+        
+        // 尝试不同大小的缓冲区
+        let multipliers = [2, 4, 8] // 先尝试2倍，不够再增加
+        
+        for multiplier in multipliers {
+            let bufferSize = count * multiplier
+            var compressedData = Data(count: bufferSize)
 
-        let compressedSize = compressedData.withUnsafeMutableBytes { destBuffer -> Int in
-            self.withUnsafeBytes { sourceBuffer -> Int in
-                guard let dest = destBuffer.baseAddress,
-                      let source = sourceBuffer.baseAddress else {
-                    return 0
+            let compressedSize = compressedData.withUnsafeMutableBytes { destBuffer -> Int in
+                self.withUnsafeBytes { sourceBuffer -> Int in
+                    guard let dest = destBuffer.baseAddress,
+                          let source = sourceBuffer.baseAddress else {
+                        return 0
+                    }
+
+                    return compression_encode_buffer(
+                        dest,
+                        bufferSize,
+                        source,
+                        count,
+                        nil,
+                        algorithm
+                    )
                 }
+            }
 
-                return compression_encode_buffer(
-                    dest,
-                    bufferSize,
-                    source,
-                    count,
-                    nil,
-                    algorithm
-                )
+            if compressedSize > 0 && compressedSize <= bufferSize {
+                compressedData.count = compressedSize
+                return compressedData
             }
         }
-
-        guard compressedSize > 0 else {
-            throw NexusError.custom(message: "Compression failed", underlyingError: nil)
-        }
-
-        compressedData.count = compressedSize
-        return compressedData
+        
+        throw NexusError.custom(message: "Compression failed", underlyingError: nil)
     }
 
     /// 使用指定算法解压缩
     private func decompressed(using algorithm: compression_algorithm) throws -> Data {
-        let bufferSize = count * 4 // 假设解压后最多4倍大小
-        var decompressedData = Data(count: bufferSize)
+        // 解压缩需要更大的缓冲区
+        // 尝试多次，从4倍开始，如果不够就增加
+        var multiplier = 4
+        let maxMultiplier = 32 // 最多32倍
+        
+        while multiplier <= maxMultiplier {
+            let bufferSize = count * multiplier
+            var decompressedData = Data(count: bufferSize)
 
-        let decompressedSize = decompressedData.withUnsafeMutableBytes { destBuffer -> Int in
-            self.withUnsafeBytes { sourceBuffer -> Int in
-                guard let dest = destBuffer.baseAddress,
-                      let source = sourceBuffer.baseAddress else {
-                    return 0
+            let decompressedSize = decompressedData.withUnsafeMutableBytes { destBuffer -> Int in
+                self.withUnsafeBytes { sourceBuffer -> Int in
+                    guard let dest = destBuffer.baseAddress,
+                          let source = sourceBuffer.baseAddress else {
+                        return 0
+                    }
+
+                    return compression_decode_buffer(
+                        dest,
+                        bufferSize,
+                        source,
+                        count,
+                        nil,
+                        algorithm
+                    )
                 }
-
-                return compression_decode_buffer(
-                    dest,
-                    bufferSize,
-                    source,
-                    count,
-                    nil,
-                    algorithm
-                )
             }
-        }
 
-        guard decompressedSize > 0 else {
-            throw NexusError.custom(message: "Decompression failed", underlyingError: nil)
+            if decompressedSize > 0 && decompressedSize <= bufferSize {
+                decompressedData.count = decompressedSize
+                return decompressedData
+            }
+            
+            // 如果返回0或者超过缓冲区，尝试更大的缓冲区
+            multiplier *= 2
         }
-
-        decompressedData.count = decompressedSize
-        return decompressedData
+        
+        throw NexusError.custom(message: "Decompression failed", underlyingError: nil)
     }
     #endif
 
