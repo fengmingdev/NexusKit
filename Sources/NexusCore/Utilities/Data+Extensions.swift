@@ -6,8 +6,10 @@
 //
 
 import Foundation
-#if canImport(Compression)
-import Compression
+#if os(Linux)
+import zlibLinux
+#else
+import zlib
 #endif
 
 // MARK: - Data Extensions
@@ -140,118 +142,171 @@ public extension Data {
         self = data
     }
 
-    // MARK: - Compression (requires Compression framework)
+    // MARK: - Compression (uses zlib)
 
-    #if canImport(Compression)
-    /// ZLIB 压缩（兼容 GZIP 名称）
+    #if os(Linux)
+    // Linux 环境需要导入 zlibLinux
+    #else
+    /// 检查数据是否为 GZIP 格式
+    var isGzipped: Bool {
+        return self.starts(with: [0x1f, 0x8b])  // GZIP 魔数
+    }
+
+    /// GZIP 压缩
+    /// - Parameter level: 压缩级别 (0-9)，默认为 -1（默认压缩）
     /// - Returns: 压缩后的数据
-    /// - Throws: 压缩失败
-    /// - Note: 使用 ZLIB 格式，不是真正的 GZIP 格式。ZLIB 和 GZIP 都使用 DEFLATE 算法，但头部不同。
-    func gzipped() throws -> Data {
-        try compressed(using: COMPRESSION_ZLIB)
+    /// - Throws: NexusError 如果压缩失败
+    /// - Note: 使用 zlib 的 GZIP 格式（包含头部和尾部）
+    func gzipped(level: Int32 = Z_DEFAULT_COMPRESSION) throws -> Data {
+        guard !isEmpty else {
+            return Data()
+        }
+
+        var stream = z_stream()
+        var status: Int32
+
+        // wBits = MAX_WBITS + 16 表示使用 GZIP 格式（包含头部和校验和）
+        status = deflateInit2_(&stream,
+                               level,
+                               Z_DEFLATED,
+                               MAX_WBITS + 16,  // GZIP 格式
+                               MAX_MEM_LEVEL,
+                               Z_DEFAULT_STRATEGY,
+                               ZLIB_VERSION,
+                               Int32(MemoryLayout<z_stream>.size))
+
+        guard status == Z_OK else {
+            throw NexusError.custom(
+                message: "Gzip compression initialization failed",
+                underlyingError: NSError(domain: "GzipError", code: Int(status))
+            )
+        }
+
+        var compressedData = Data(capacity: 1 << 14)  // 16KB 初始容量
+
+        repeat {
+            if Int(stream.total_out) >= compressedData.count {
+                compressedData.count += (1 << 14)  // 每次增加 16KB
+            }
+
+            let inputCount = self.count
+            let outputCount = compressedData.count
+
+            self.withUnsafeBytes { (inputPointer: UnsafeRawBufferPointer) in
+                stream.next_in = UnsafeMutablePointer<Bytef>(
+                    mutating: inputPointer.bindMemory(to: Bytef.self).baseAddress!
+                ).advanced(by: Int(stream.total_in))
+                stream.avail_in = uInt(inputCount) - uInt(stream.total_in)
+
+                compressedData.withUnsafeMutableBytes { (outputPointer: UnsafeMutableRawBufferPointer) in
+                    stream.next_out = outputPointer.bindMemory(to: Bytef.self).baseAddress!
+                        .advanced(by: Int(stream.total_out))
+                    stream.avail_out = uInt(outputCount) - uInt(stream.total_out)
+
+                    status = deflate(&stream, Z_FINISH)
+
+                    stream.next_out = nil
+                }
+
+                stream.next_in = nil
+            }
+        } while stream.avail_out == 0 && status != Z_STREAM_END
+
+        guard deflateEnd(&stream) == Z_OK, status == Z_STREAM_END else {
+            throw NexusError.custom(
+                message: "Gzip compression failed",
+                underlyingError: NSError(domain: "GzipError", code: Int(status))
+            )
+        }
+
+        compressedData.count = Int(stream.total_out)
+        return compressedData
     }
 
     /// GZIP 压缩（别名）
-    /// - Returns: 压缩后的数据
-    /// - Throws: 压缩失败
     func gzipCompressed() throws -> Data {
         try gzipped()
     }
 
     /// GZIP 解压缩
     /// - Returns: 解压后的数据
-    /// - Throws: 解压失败
+    /// - Throws: NexusError 如果解压失败
+    /// - Note: 自动检测 GZIP 或 ZLIB 格式
     func gunzipped() throws -> Data {
-        try decompressed(using: COMPRESSION_ZLIB)
+        guard !isEmpty else {
+            return Data()
+        }
+
+        var totalIn: uLong = 0
+        var totalOut: uLong = 0
+        var decompressedData = Data(capacity: self.count * 2)
+
+        repeat {
+            var stream = z_stream()
+            var status: Int32
+
+            // wBits = MAX_WBITS + 32 表示自动检测 GZIP 或 ZLIB 格式
+            status = inflateInit2_(&stream,
+                                   MAX_WBITS + 32,  // 自动检测格式
+                                   ZLIB_VERSION,
+                                   Int32(MemoryLayout<z_stream>.size))
+
+            guard status == Z_OK else {
+                throw NexusError.custom(
+                    message: "Gzip decompression initialization failed",
+                    underlyingError: NSError(domain: "GzipError", code: Int(status))
+                )
+            }
+
+            repeat {
+                if Int(totalOut + stream.total_out) >= decompressedData.count {
+                    decompressedData.count += self.count / 2
+                }
+
+                let inputCount = self.count
+                let outputCount = decompressedData.count
+
+                self.withUnsafeBytes { (inputPointer: UnsafeRawBufferPointer) in
+                    let inputStartPosition = totalIn + stream.total_in
+                    stream.next_in = UnsafeMutablePointer<Bytef>(
+                        mutating: inputPointer.bindMemory(to: Bytef.self).baseAddress!
+                    ).advanced(by: Int(inputStartPosition))
+                    stream.avail_in = uInt(inputCount) - uInt(inputStartPosition)
+
+                    decompressedData.withUnsafeMutableBytes { (outputPointer: UnsafeMutableRawBufferPointer) in
+                        let outputStartPosition = totalOut + stream.total_out
+                        stream.next_out = outputPointer.bindMemory(to: Bytef.self).baseAddress!
+                            .advanced(by: Int(outputStartPosition))
+                        stream.avail_out = uInt(outputCount) - uInt(outputStartPosition)
+
+                        status = inflate(&stream, Z_SYNC_FLUSH)
+
+                        stream.next_out = nil
+                    }
+
+                    stream.next_in = nil
+                }
+            } while status == Z_OK
+
+            totalIn += stream.total_in
+
+            guard inflateEnd(&stream) == Z_OK, status == Z_STREAM_END else {
+                throw NexusError.custom(
+                    message: "Gzip decompression failed",
+                    underlyingError: NSError(domain: "GzipError", code: Int(status))
+                )
+            }
+
+            totalOut += stream.total_out
+        } while totalIn < self.count
+
+        decompressedData.count = Int(totalOut)
+        return decompressedData
     }
 
     /// GZIP 解压缩（别名）
-    /// - Returns: 解压后的数据
-    /// - Throws: 解压失败
     func gzipDecompressed() throws -> Data {
         try gunzipped()
-    }
-
-    /// 使用指定算法压缩
-    private func compressed(using algorithm: compression_algorithm) throws -> Data {
-        guard !isEmpty else {
-            // 空数据特殊处理
-            return Data()
-        }
-        
-        // 尝试不同大小的缓冲区
-        let multipliers = [2, 4, 8] // 先尝试2倍，不够再增加
-        
-        for multiplier in multipliers {
-            let bufferSize = count * multiplier
-            var compressedData = Data(count: bufferSize)
-
-            let compressedSize = compressedData.withUnsafeMutableBytes { destBuffer -> Int in
-                self.withUnsafeBytes { sourceBuffer -> Int in
-                    guard let dest = destBuffer.baseAddress,
-                          let source = sourceBuffer.baseAddress else {
-                        return 0
-                    }
-
-                    return compression_encode_buffer(
-                        dest,
-                        bufferSize,
-                        source,
-                        count,
-                        nil,
-                        algorithm
-                    )
-                }
-            }
-
-            if compressedSize > 0 && compressedSize <= bufferSize {
-                compressedData.count = compressedSize
-                return compressedData
-            }
-        }
-        
-        throw NexusError.custom(message: "Compression failed", underlyingError: nil)
-    }
-
-    /// 使用指定算法解压缩
-    private func decompressed(using algorithm: compression_algorithm) throws -> Data {
-        // 解压缩需要更大的缓冲区
-        // 尝试多次，从4倍开始，如果不够就增加
-        var multiplier = 4
-        let maxMultiplier = 32 // 最多32倍
-        
-        while multiplier <= maxMultiplier {
-            let bufferSize = count * multiplier
-            var decompressedData = Data(count: bufferSize)
-
-            let decompressedSize = decompressedData.withUnsafeMutableBytes { destBuffer -> Int in
-                self.withUnsafeBytes { sourceBuffer -> Int in
-                    guard let dest = destBuffer.baseAddress,
-                          let source = sourceBuffer.baseAddress else {
-                        return 0
-                    }
-
-                    return compression_decode_buffer(
-                        dest,
-                        bufferSize,
-                        source,
-                        count,
-                        nil,
-                        algorithm
-                    )
-                }
-            }
-
-            if decompressedSize > 0 && decompressedSize <= bufferSize {
-                decompressedData.count = decompressedSize
-                return decompressedData
-            }
-            
-            // 如果返回0或者超过缓冲区，尝试更大的缓冲区
-            multiplier *= 2
-        }
-        
-        throw NexusError.custom(message: "Decompression failed", underlyingError: nil)
     }
     #endif
 
@@ -263,6 +318,8 @@ public extension Data {
     func safeSubdata(in range: Range<Int>) -> Data {
         let safeLower = Swift.max(0, range.lowerBound)
         let safeUpper = Swift.min(count, range.upperBound)
+        // 确保 lower <= upper
+        guard safeLower <= safeUpper else { return Data() }
         let safeRange = safeLower..<safeUpper
         guard !safeRange.isEmpty else { return Data() }
         return subdata(in: safeRange)
