@@ -97,6 +97,7 @@ docs/
 Documentation/API/*.html
 Documentation/API/*.css
 Documentation/API/*.js
+Documentation/Archive/
 
 # Coverage
 *.profdata
