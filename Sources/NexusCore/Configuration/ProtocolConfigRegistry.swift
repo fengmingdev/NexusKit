@@ -128,14 +128,14 @@ public final class ProtocolConfigRegistry: Sendable {
 // MARK: - Protocol Config
 
 /// 协议配置
-public struct ProtocolConfig: Sendable {
-    
+public struct ProtocolConfig: @unchecked Sendable {
+
     /// 协议名称
     public let name: String
-    
+
     /// 协议版本
     public let version: String
-    
+
     /// 协议选项
     public var options: [String: Any]
     

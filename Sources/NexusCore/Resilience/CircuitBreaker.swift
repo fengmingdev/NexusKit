@@ -207,7 +207,7 @@ public actor CircuitBreaker {
     /// - Parameter operation: 要执行的操作
     /// - Returns: 操作结果
     /// - Throws: 操作错误或熔断器错误
-    public func execute<T>(_ operation: @Sendable () async throws -> T) async throws -> T {
+    public func execute<T: Sendable>(_ operation: @Sendable () async throws -> T) async throws -> T {
         // 检查是否允许执行
         try checkAndUpdateState()
 
@@ -240,7 +240,7 @@ public actor CircuitBreaker {
     ///   - operation: 要执行的操作
     /// - Returns: 操作结果
     /// - Throws: 操作错误、超时错误或熔断器错误
-    public func execute<T>(
+    public func execute<T: Sendable>(
         timeout: TimeInterval,
         operation: @escaping @Sendable () async throws -> T
     ) async throws -> T {
@@ -473,7 +473,7 @@ public actor CircuitBreaker {
     }
 
     /// 带超时执行
-    private func withTimeout<T>(
+    private func withTimeout<T: Sendable>(
         _ timeout: TimeInterval,
         operation: @escaping @Sendable () async throws -> T
     ) async throws -> T {

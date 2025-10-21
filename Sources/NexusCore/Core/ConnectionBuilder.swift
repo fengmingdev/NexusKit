@@ -24,7 +24,7 @@ public final class ConnectionBuilder {
     private var readWriteTimeout: TimeInterval?
     private var heartbeatConfig: HeartbeatConfiguration?
     private var tlsConfig: LegacyTLSConfiguration?
-    private var proxyConfig: NexusCore.ProxyConfiguration?
+    private var proxyConfig: ProxyConfiguration?
     private var lifecycleHooks: LifecycleHooks = LifecycleHooks()
     private var customMetadata: [String: String] = [:]
 
@@ -201,11 +201,11 @@ public final class ConnectionBuilder {
 
     private func buildConfiguration() -> ConnectionConfiguration {
         // 转换 LegacyTLSConfiguration 到新的 TLSConfiguration
-        let newTLSConfig: NexusCore.TLSConfiguration?
+        let newTLSConfig: TLSConfiguration?
         if let legacy = tlsConfig {
             if legacy.enabled {
                 // 创建简单的 TLS 配置（使用系统默认）
-                newTLSConfig = NexusCore.TLSConfiguration(
+                newTLSConfig = TLSConfiguration(
                     enabled: true,
                     version: .automatic,
                     p12Certificate: nil,
@@ -255,8 +255,8 @@ public struct ConnectionConfiguration: Sendable {
     public let connectTimeout: TimeInterval
     public let readWriteTimeout: TimeInterval
     public let heartbeatConfig: HeartbeatConfiguration
-    public let tlsConfig: NexusCore.TLSConfiguration? // 使用增强的TLSConfiguration
-    public let proxyConfig: NexusCore.ProxyConfiguration? // 使用增强的ProxyConfiguration
+    public let tlsConfig: TLSConfiguration? // 使用增强的TLSConfiguration
+    public let proxyConfig: ProxyConfiguration? // 使用增强的ProxyConfiguration
     public let lifecycleHooks: LifecycleHooks
     public let metadata: [String: String]
 
@@ -269,8 +269,8 @@ public struct ConnectionConfiguration: Sendable {
         connectTimeout: TimeInterval,
         readWriteTimeout: TimeInterval,
         heartbeatConfig: HeartbeatConfiguration,
-        tlsConfig: NexusCore.TLSConfiguration?,
-        proxyConfig: NexusCore.ProxyConfiguration?,
+        tlsConfig: TLSConfiguration?,
+        proxyConfig: ProxyConfiguration?,
         lifecycleHooks: LifecycleHooks,
         metadata: [String: String]
     ) {
