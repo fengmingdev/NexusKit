@@ -136,16 +136,22 @@ public actor SocketIONamespace {
         case .event:
             if let eventName = await extractEventName(from: packet) {
                 let eventData = await extractEventData(from: packet)
-                
-                // 触发事件处理器
+
+                // 触发事件处理器 (在actor内部,不需要发送数据)
                 if let handlers = eventHandlers[eventName] {
                     for handler in handlers {
                         await handler(eventData)
                     }
                 }
-                
-                // 通知代理
-                await delegate?.namespace(path, didReceiveEvent: eventName, data: eventData)
+
+                // 通知代理 (需要发送数据,使用Task隔离)
+                if let delegate = delegate {
+                    // 创建eventData的副本以安全传递
+                    let dataCopy = eventData
+                    Task { [weak delegate, path, eventName] in
+                        await delegate?.namespace(path, didReceiveEvent: eventName, data: dataCopy)
+                    }
+                }
             }
             
         default:
