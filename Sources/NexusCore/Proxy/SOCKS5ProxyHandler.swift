@@ -53,13 +53,13 @@ public actor SOCKS5ProxyHandler {
 
     // MARK: - Properties
 
-    private let configuration: NexusCore.ProxyConfiguration
+    private let configuration: ProxyConfiguration
     private var ipv4Cache: [String: Data] = [:]
     private var ipv6Cache: [String: Data] = [:]
 
     // MARK: - Initialization
 
-    public init(configuration: NexusCore.ProxyConfiguration) {
+    public init(configuration: ProxyConfiguration) {
         self.configuration = configuration
     }
 
@@ -149,8 +149,8 @@ public actor SOCKS5ProxyHandler {
             throw NexusError.proxyAuthenticationFailed
         }
 
-        guard let usernameData = credentials.username.data(using: .utf8),
-              let passwordData = credentials.password.data(using: .utf8),
+        guard let usernameData = credentials.username.data(using: String.Encoding.utf8),
+              let passwordData = credentials.password.data(using: String.Encoding.utf8),
               usernameData.count <= 255,
               passwordData.count <= 255 else {
             throw NexusError.proxyConnectionFailed(reason: "凭证格式错误")
@@ -263,7 +263,7 @@ public actor SOCKS5ProxyHandler {
             }
 
             // 使用域名
-            guard let hostData = host.data(using: .utf8), hostData.count <= 255 else {
+            guard let hostData = host.data(using: String.Encoding.utf8), hostData.count <= 255 else {
                 throw NexusError.proxyConnectionFailed(reason: "域名过长")
             }
 

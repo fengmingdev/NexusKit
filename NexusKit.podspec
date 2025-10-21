@@ -29,18 +29,14 @@ Pod::Spec.new do |s|
 
   s.homepage         = 'https://github.com/fengmingdev/NexusKit'
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
-  s.author           = { 'NexusKit Contributors' => 'contact@nexuskit.dev' }
-  s.source           = {
-    :git => 'https://github.com/fengmingdev/NexusKit.git',
-    :tag => s.version.to_s
-  }
-
+  s.author           = { 'NexusKit Contributors' => '1028708571@qq.com' }
+  s.source           = { :git => 'https://github.com/fengmingdev/NexusKit.git', :tag => s.version.to_s }
   s.documentation_url = 'https://github.com/fengmingdev/NexusKit'
 
   # Platform support
   s.ios.deployment_target = '13.0'
   s.osx.deployment_target = '10.15'
-  s.tvos.deployment_target = '13.0'
+  # s.tvos.deployment_target = '13.0'  # 暂时禁用 tvOS 支持
   s.watchos.deployment_target = '6.0'
 
   s.swift_versions = ['6.0']
@@ -55,39 +51,49 @@ Pod::Spec.new do |s|
     core.frameworks = 'Foundation', 'Network'
   end
 
-  # MARK: - IO Module (WebSocket/Socket.IO)
+  # MARK: - TCP Module (TCP 连接支持)
+
+  s.subspec 'TCP' do |tcp|
+    tcp.source_files = 'Sources/NexusTCP/**/*.swift'
+    tcp.dependency 'NexusKit/Core'
+    tcp.frameworks = 'Foundation', 'Network'
+  end
+
+  # MARK: - WebSocket Module (WebSocket 支持)
+
+  s.subspec 'WebSocket' do |websocket|
+    websocket.source_files = 'Sources/NexusWebSocket/**/*.swift'
+    websocket.dependency 'NexusKit/Core'
+    websocket.dependency 'NexusKit/TCP'
+    websocket.frameworks = 'Foundation'
+  end
+
+  # MARK: - IO Module (Socket.IO 支持)
 
   s.subspec 'IO' do |io|
     io.source_files = 'Sources/NexusIO/**/*.swift'
     io.dependency 'NexusKit/Core'
+    io.dependency 'NexusKit/WebSocket'
     io.frameworks = 'Foundation'
   end
 
-  # MARK: - Monitoring Module (监控诊断)
+  # MARK: - HTTP Module (HTTP 客户端)
 
-  s.subspec 'Monitoring' do |monitoring|
-    monitoring.source_files = 'Sources/NexusMonitoring/**/*.swift'
-    monitoring.dependency 'NexusKit/Core'
-    monitoring.frameworks = 'Foundation'
-  end
-
-  # MARK: - UI Module (SwiftUI 集成)
-
-  s.subspec 'UI' do |ui|
-    ui.source_files = 'Sources/NexusUI/**/*.swift'
-    ui.dependency 'NexusKit/Core'
-    ui.frameworks = 'SwiftUI'
-    ui.ios.deployment_target = '14.0'
-    ui.osx.deployment_target = '11.0'
+  s.subspec 'HTTP' do |http|
+    http.source_files = 'Sources/NexusHTTP/**/*.swift'
+    http.dependency 'NexusKit/Core'
+    http.dependency 'NexusKit/TCP'
+    http.frameworks = 'Foundation'
   end
 
   # MARK: - Complete Package (完整套件)
 
   s.subspec 'Complete' do |complete|
     complete.dependency 'NexusKit/Core'
+    complete.dependency 'NexusKit/TCP'
+    complete.dependency 'NexusKit/WebSocket'
     complete.dependency 'NexusKit/IO'
-    complete.dependency 'NexusKit/Monitoring'
-    complete.dependency 'NexusKit/UI'
+    complete.dependency 'NexusKit/HTTP'
   end
 
   # Test spec
