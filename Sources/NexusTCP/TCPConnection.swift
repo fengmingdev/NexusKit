@@ -9,9 +9,12 @@
 
 import Foundation
 import Network
-#if canImport(NexusCore)
 import NexusCore
-#endif
+
+// MARK: - Type Aliases
+
+// 避免与 Network.ProxyConfiguration (iOS 17.0+) 冲突
+typealias NexusProxyConfiguration = NexusCore.ProxyConfiguration
 
 // MARK: - TCP Connection
 
@@ -741,7 +744,7 @@ public final class TCPConnection: Connection, @unchecked Sendable {
         connection: NWConnection,
         targetHost: String,
         targetPort: UInt16,
-        proxyConfig: ProxyConfiguration
+        proxyConfig: NexusProxyConfiguration
     ) async throws {
         print("[TCPConnection] 执行 SOCKS5 握手")
 

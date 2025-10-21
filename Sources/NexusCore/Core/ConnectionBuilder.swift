@@ -359,5 +359,3 @@ public struct TLSCertificate: Sendable {
 
 // MARK: - Proxy Configuration
 // 代理配置已移至 NexusCore/Proxy/ProxyConfiguration.swift
-// 此处保留类型别名以保持向后兼容
-public typealias OldProxyConfiguration = ProxyConfiguration

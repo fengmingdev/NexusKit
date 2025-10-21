@@ -56,6 +56,14 @@ public enum ConnectionState: Sendable, Equatable, CustomStringConvertible {
         }
     }
 
+    /// 是否正在重连
+    public var isReconnecting: Bool {
+        if case .reconnecting = self {
+            return true
+        }
+        return false
+    }
+
     // MARK: - CustomStringConvertible
 
     public var description: String {
