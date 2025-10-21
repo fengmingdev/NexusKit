@@ -787,15 +787,6 @@ private func withTimeout<T>(
     }
 }
 
-// MARK: - Connection Event
-
-/// 连接事件
-public enum ConnectionEvent: Hashable, Sendable {
-    case message
-    case notification
-    case control
-}
-
 // MARK: - Connection State Extension
 
 extension ConnectionState {

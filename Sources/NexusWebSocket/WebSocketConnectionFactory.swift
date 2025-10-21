@@ -14,7 +14,7 @@ import NexusCore
 
 /// WebSocket 连接工厂
 @available(iOS 13.0, macOS 10.15, *)
-public final class WebSocketConnectionFactory {
+public final class WebSocketConnectionFactory: @unchecked Sendable {
     public static let shared = WebSocketConnectionFactory()
 
     private init() {}
