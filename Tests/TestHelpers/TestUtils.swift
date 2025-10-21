@@ -8,8 +8,7 @@
 
 import Foundation
 import XCTest
-import NexusCore
-import NexusTCP
+@testable import NexusKit
 
 /// 测试工具类
 public enum TestUtils {

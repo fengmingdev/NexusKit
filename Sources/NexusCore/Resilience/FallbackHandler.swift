@@ -98,7 +98,7 @@ public actor CacheFallback<T: Sendable>: FallbackStrategy {
 
     public func execute(error: Error, context: FallbackContext) async throws -> T {
         // 清理过期缓存
-        await cleanupExpiredCache()
+        cleanupExpiredCache()
 
         // 获取缓存值
         guard let cached = cache[context.operationName] else {

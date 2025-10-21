@@ -119,7 +119,7 @@ public actor DefaultProtocolContext: ProtocolContext {
 
     public var isConnected: Bool {
         get async {
-            guard let connection = connection else { return false }
+            guard connection != nil else { return false }
             // Note: Connection protocol needs to be extended with isConnected property
             return true // Placeholder - actual implementation depends on Connection protocol
         }
@@ -133,7 +133,7 @@ public actor DefaultProtocolContext: ProtocolContext {
     }
 
     public func receive(timeout: TimeInterval? = nil) async throws -> Data {
-        guard let connection = connection else {
+        guard connection != nil else {
             throw ProtocolError.connectionClosed
         }
         // Note: Connection protocol may need a receive method

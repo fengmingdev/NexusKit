@@ -119,7 +119,7 @@ public final class ProtocolConfigRegistry: Sendable {
     
     /// 验证所有协议配置
     public func validate() throws {
-        for (name, config) in configs.value {
+        for (_, config) in configs.value {
             try config.validate()
         }
     }

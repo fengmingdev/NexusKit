@@ -326,8 +326,8 @@ public actor SocketIOClient {
             
         case .event:
             // 处理事件
-            if let eventName = await parser.extractEventName(from: packet) {
-                let eventData = await parser.extractEventData(from: packet)
+            if let eventName = parser.extractEventName(from: packet) {
+                let eventData = parser.extractEventData(from: packet)
                 
                 // 触发事件处理器
                 if let handlers = eventHandlers[eventName] {
@@ -416,8 +416,8 @@ public actor SocketIOClient {
         // 2. 然后收到对应数量的二进制数据包
         
         // 暂时简化处理：将二进制数据作为 Data 类型传递
-        if let eventName = await parser.extractEventName(from: packet) {
-            var eventData = await parser.extractEventData(from: packet)
+        if let eventName = parser.extractEventName(from: packet) {
+            var eventData = parser.extractEventData(from: packet)
             
             // 如果有二进制附件，添加到数据中
             if !binaryBuffers.isEmpty {

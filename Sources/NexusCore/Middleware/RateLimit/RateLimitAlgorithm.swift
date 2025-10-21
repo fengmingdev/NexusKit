@@ -106,7 +106,7 @@ public actor TokenBucketRateLimiter: RateLimitAlgorithm {
     }
 
     public func tryAcquire(cost: Int = 1) async -> Bool {
-        await refill()
+        refill()
 
         guard Double(cost) <= capacity else {
             return false
@@ -146,7 +146,7 @@ public actor TokenBucketRateLimiter: RateLimitAlgorithm {
     }
 
     public func getCurrentRate() async -> RateInfo {
-        await refill()
+        refill()
         return RateInfo(
             available: tokens,
             capacity: capacity,
@@ -199,7 +199,7 @@ public actor LeakyBucketRateLimiter: RateLimitAlgorithm {
     }
 
     public func tryAcquire(cost: Int = 1) async -> Bool {
-        await leak()
+        leak()
 
         if waterLevel + Double(cost) <= capacity {
             waterLevel += Double(cost)
@@ -233,7 +233,7 @@ public actor LeakyBucketRateLimiter: RateLimitAlgorithm {
     }
 
     public func getCurrentRate() async -> RateInfo {
-        await leak()
+        leak()
         return RateInfo(
             available: capacity - waterLevel,
             capacity: capacity,
@@ -286,7 +286,7 @@ public actor FixedWindowRateLimiter: RateLimitAlgorithm {
     }
 
     public func tryAcquire(cost: Int = 1) async -> Bool {
-        await checkWindow()
+        checkWindow()
 
         if requestCount + cost <= maxRequests {
             requestCount += cost
@@ -323,7 +323,7 @@ public actor FixedWindowRateLimiter: RateLimitAlgorithm {
     }
 
     public func getCurrentRate() async -> RateInfo {
-        await checkWindow()
+        checkWindow()
         return RateInfo(
             available: Double(maxRequests - requestCount),
             capacity: Double(maxRequests),
@@ -373,7 +373,7 @@ public actor SlidingWindowRateLimiter: RateLimitAlgorithm {
     }
 
     public func tryAcquire(cost: Int = 1) async -> Bool {
-        await cleanupOldTimestamps()
+        cleanupOldTimestamps()
 
         if timestamps.count + cost <= maxRequests {
             for _ in 0..<cost {
@@ -413,7 +413,7 @@ public actor SlidingWindowRateLimiter: RateLimitAlgorithm {
     }
 
     public func getCurrentRate() async -> RateInfo {
-        await cleanupOldTimestamps()
+        cleanupOldTimestamps()
         return RateInfo(
             available: Double(maxRequests - timestamps.count),
             capacity: Double(maxRequests),

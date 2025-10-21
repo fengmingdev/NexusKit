@@ -220,14 +220,14 @@ public actor CircuitBreaker {
 
             // 记录成功
             let duration = Date().timeIntervalSince(startTime)
-            await recordSuccess(duration: duration)
+            recordSuccess(duration: duration)
 
             return result
 
         } catch {
             // 记录失败
             let duration = Date().timeIntervalSince(startTime)
-            await recordFailure(duration: duration, error: error)
+            recordFailure(duration: duration, error: error)
 
             throw error
         }

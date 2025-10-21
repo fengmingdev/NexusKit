@@ -102,14 +102,14 @@ public actor CacheStorage {
     /// 获取缓存数据
     public func get(_ key: String) async -> Data? {
         guard var entry = entries[key] else {
-            await stats.recordMiss()
+            stats.recordMiss()
             return nil
         }
         
         // 检查是否过期
         if entry.isExpired() {
             await remove(key)
-            await stats.recordMiss()
+            stats.recordMiss()
             return nil
         }
         
@@ -121,7 +121,7 @@ public actor CacheStorage {
         // 通知策略
         await strategy.onAccess(key: key, timestamp: entry.lastAccessedAt)
         
-        await stats.recordHit()
+        stats.recordHit()
         return entry.data
     }
     
@@ -138,7 +138,7 @@ public actor CacheStorage {
         while (entries.count >= maxCount || currentSize + Int64(entry.size) > maxSize),
               let keyToEvict = await strategy.selectKeyToEvict() {
             await remove(keyToEvict)
-            await stats.recordEviction()
+            stats.recordEviction()
         }
         
         // 添加新条目
@@ -148,7 +148,7 @@ public actor CacheStorage {
         // 通知策略
         await strategy.onAdd(key: key, size: entry.size, timestamp: entry.createdAt)
         
-        await stats.recordSet()
+        stats.recordSet()
     }
     
     /// 删除缓存

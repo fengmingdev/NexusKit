@@ -8,7 +8,6 @@
 
 import Foundation
 import Security
-import NexusCore
 
 /// TLS测试辅助类
 public enum TLSTestHelper {
