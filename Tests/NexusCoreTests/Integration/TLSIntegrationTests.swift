@@ -8,7 +8,7 @@
 
 import XCTest
 import Foundation
-@testable import NexusCore
+@testable import NexusKit
 
 /// TLS/SSL集成测试套件
 ///

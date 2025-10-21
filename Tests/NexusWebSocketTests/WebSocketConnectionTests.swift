@@ -6,8 +6,8 @@
 //
 
 import XCTest
-@testable import NexusCore
-@testable import NexusWebSocket
+@testable import NexusKit
+@testable import NexusKit
 
 /// WebSocket 连接测试
 final class WebSocketConnectionTests: XCTestCase {

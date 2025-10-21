@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import NexusIO
+@testable import NexusKit
 
 /// Socket.IO 集成测试
 /// - Note: 需要启动 TestServers/socketio_server.js

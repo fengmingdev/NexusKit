@@ -8,7 +8,7 @@
 
 import XCTest
 import Foundation
-@testable import NexusCore
+@testable import NexusKit
 
 /// 压力测试套件
 ///

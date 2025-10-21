@@ -8,7 +8,7 @@
 
 import XCTest
 import Foundation
-@testable import NexusCore
+@testable import NexusKit
 
 /// 实时游戏场景测试
 ///

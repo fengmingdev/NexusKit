@@ -8,7 +8,7 @@
 
 import XCTest
 import Foundation
-@testable import NexusCore
+@testable import NexusKit
 
 /// 稳定性测试套件
 ///

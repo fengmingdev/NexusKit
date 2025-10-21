@@ -7,7 +7,7 @@
 //
 
 import XCTest
-@testable import NexusCore
+@testable import NexusKit
 
 /// Performance benchmarks for zero-copy optimization
 /// Target: Reduce memory copying by 70%+ and improve throughput by 50%+

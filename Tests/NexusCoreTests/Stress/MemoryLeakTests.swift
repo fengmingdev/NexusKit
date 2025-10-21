@@ -8,7 +8,7 @@
 
 import XCTest
 import Foundation
-@testable import NexusCore
+@testable import NexusKit
 
 /// 内存泄漏检测测试套件
 ///

@@ -8,8 +8,8 @@
 //
 
 import XCTest
-@testable import NexusCore
-@testable import NexusTCP
+@testable import NexusKit
+@testable import NexusKit
 
 /// 端到端集成测试
 final class EndToEndTests: XCTestCase {

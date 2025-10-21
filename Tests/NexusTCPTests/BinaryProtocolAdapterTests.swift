@@ -6,8 +6,8 @@
 //
 
 import XCTest
-@testable import NexusCore
-@testable import NexusTCP
+@testable import NexusKit
+@testable import NexusKit
 
 /// 二进制协议适配器测试
 final class BinaryProtocolAdapterTests: XCTestCase {

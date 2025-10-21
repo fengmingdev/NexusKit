@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import NexusCore
+@testable import NexusKit
 
 /// 错误类型测试
 final class NexusErrorTests: XCTestCase {

@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import NexusCore
+@testable import NexusKit
 
 /// Data 扩展测试
 final class DataExtensionsTests: XCTestCase {

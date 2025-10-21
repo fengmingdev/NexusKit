@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import NexusCore
+@testable import NexusKit
 
 /// 重连策略测试
 final class ReconnectionStrategyTests: XCTestCase {

@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import NexusCore
+@testable import NexusKit
 
 /// 中间件系统测试
 final class MiddlewareTests: XCTestCase {

@@ -6,8 +6,8 @@
 //
 
 import XCTest
-@testable import NexusCore
-@testable import NexusTCP
+@testable import NexusKit
+@testable import NexusKit
 
 /// 缓冲管理器集成测试
 final class BufferIntegrationTests: XCTestCase {

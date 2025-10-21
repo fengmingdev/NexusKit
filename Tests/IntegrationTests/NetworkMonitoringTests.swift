@@ -7,8 +7,8 @@
 
 import XCTest
 import Network
-@testable import NexusCore
-@testable import NexusTCP
+@testable import NexusKit
+@testable import NexusKit
 
 /// 网络监控集成测试
 final class NetworkMonitoringTests: XCTestCase {

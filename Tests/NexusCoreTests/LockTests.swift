@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import NexusCore
+@testable import NexusKit
 
 /// 锁和原子操作测试
 final class LockTests: XCTestCase {

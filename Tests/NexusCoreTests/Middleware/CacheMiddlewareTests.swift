@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import NexusCore
+@testable import NexusKit
 
 final class CacheMiddlewareTests: XCTestCase {
     

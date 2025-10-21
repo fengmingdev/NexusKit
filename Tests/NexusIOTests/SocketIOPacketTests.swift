@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import NexusIO
+@testable import NexusKit
 
 final class SocketIOPacketTests: XCTestCase {
     

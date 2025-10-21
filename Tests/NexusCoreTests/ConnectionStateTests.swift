@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import NexusCore
+@testable import NexusKit
 
 /// 连接状态测试
 final class ConnectionStateTests: XCTestCase {

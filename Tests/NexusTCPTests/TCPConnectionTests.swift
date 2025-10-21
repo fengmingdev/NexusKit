@@ -7,8 +7,8 @@
 
 import XCTest
 import Network
-@testable import NexusCore
-@testable import NexusTCP
+@testable import NexusKit
+@testable import NexusKit
 
 /// TCP 连接测试
 final class TCPConnectionTests: XCTestCase {

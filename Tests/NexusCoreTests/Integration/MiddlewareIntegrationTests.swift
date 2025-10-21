@@ -7,7 +7,7 @@
 //  中间件集成测试 - 测试多个中间件协同工作
 
 import XCTest
-@testable import NexusCore
+@testable import NexusKit
 
 final class MiddlewareIntegrationTests: XCTestCase {
 
