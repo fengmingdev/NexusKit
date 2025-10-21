@@ -61,7 +61,7 @@ extension NexusKit {
 // MARK: - TCP Connection Builder
 
 /// TCP 连接构建器（扩展版）
-public final class TCPConnectionBuilder {
+public final class TCPConnectionBuilder: @unchecked Sendable {
     private let endpoint: Endpoint
     private let globalConfig: GlobalConfiguration
 

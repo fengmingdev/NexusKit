@@ -741,7 +741,7 @@ public final class TCPConnection: Connection, @unchecked Sendable {
         connection: NWConnection,
         targetHost: String,
         targetPort: UInt16,
-        proxyConfig: NexusCore.ProxyConfiguration
+        proxyConfig: ProxyConfiguration
     ) async throws {
         print("[TCPConnection] 执行 SOCKS5 握手")
 
@@ -784,17 +784,6 @@ private func withTimeout<T: Sendable>(
         group.cancelAll()
 
         return result
-    }
-}
-
-// MARK: - Connection State Extension
-
-extension ConnectionState {
-    var isReconnecting: Bool {
-        if case .reconnecting = self {
-            return true
-        }
-        return false
     }
 }
 

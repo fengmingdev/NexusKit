@@ -19,7 +19,7 @@ public enum SocketIOPacketType: Int, Sendable {
 }
 
 /// Socket.IO 协议包
-public struct SocketIOPacket: Sendable {
+public struct SocketIOPacket: @unchecked Sendable {
     /// 包类型
     public let type: SocketIOPacketType
     

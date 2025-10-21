@@ -256,8 +256,7 @@ public actor HTTPClient {
             // 配置 TLS
             let tlsConfig = TLSConfiguration(
                 serverName: host,
-                allowSelfSigned: false,
-                certificatePinning: nil
+                allowSelfSigned: false
             )
             builder = builder.tls(tlsConfig)
         }
