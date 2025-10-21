@@ -761,9 +761,9 @@ public final class TCPConnection: Connection, @unchecked Sendable {
 // MARK: - Timeout Helper
 
 /// 带超时的异步执行
-private func withTimeout<T>(
+private func withTimeout<T: Sendable>(
     _ timeout: TimeInterval,
-    operation: @escaping () async throws -> T
+    operation: @escaping @Sendable () async throws -> T
 ) async throws -> T {
     try await withThrowingTaskGroup(of: T.self) { group in
         // 添加实际操作

@@ -13,7 +13,7 @@ import NexusCore
 // MARK: - TCP Connection Factory
 
 /// TCP 连接工厂
-public final class TCPConnectionFactory {
+public final class TCPConnectionFactory: @unchecked Sendable {
     public static let shared = TCPConnectionFactory()
 
     private init() {}
