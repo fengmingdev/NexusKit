@@ -139,9 +139,13 @@ public actor SocketIONamespace {
                 let eventData = await extractEventData(from: packet)
 
                 // 触发事件处理器
+                // 注意: eventData 是 [Any]，不符合 Sendable，是 Socket.IO 协议的固有限制
+                // 这里使用 nonisolated(unsafe) 存储来绕过 Sendable 检查
+                // 安全性保证：数据在 actor 内部创建和使用，不会跨隔离域传递
+                nonisolated(unsafe) let unsafeData = eventData
                 if let handlers = eventHandlers[eventName] {
                     for handler in handlers {
-                        await handler(eventData)
+                        await handler(unsafeData)
                     }
                 }
 
