@@ -351,7 +351,7 @@ extension NexusConfiguration {
             do {
                 return try build()
             } catch {
-                print("[NexusConfiguration] Build failed: \(error), using default")
+                print("[NexusKit] Build failed: \(error), using default")
                 return .default
             }
         }

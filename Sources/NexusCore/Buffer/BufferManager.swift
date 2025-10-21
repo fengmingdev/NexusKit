@@ -169,7 +169,7 @@ public actor BufferManager {
         buffer = unreadData
         readIndex = 0
 
-        print("[BufferManager] 缓冲区已压缩, 释放 \(readIndex) 字节")
+        print("[NexusKit] 缓冲区已压缩, 释放 \(readIndex) 字节")
     }
 
     /// 清空缓冲区

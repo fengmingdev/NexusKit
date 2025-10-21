@@ -550,12 +550,12 @@ public final class TCPConnection: Connection, @unchecked Sendable {
             },
             onTimeout: { [weak self] in
                 guard let self = self else { return }
-                print("[TCPConnection] 心跳超时，断开连接")
+                print("[NexusKit] 心跳超时，断开连接")
                 await self.handleDisconnected(error: NexusError.heartbeatTimeout)
             },
             onStateChanged: { [weak self] state in
                 guard let self = self else { return }
-                print("[TCPConnection] 心跳状态变化: \(state)")
+                print("[NexusKit] 心跳状态变化: \(state)")
 
                 // 可以根据状态触发一些操作
                 if state == .warning {
@@ -564,13 +564,13 @@ public final class TCPConnection: Connection, @unchecked Sendable {
             }
         )
 
-        print("[TCPConnection] 增强心跳管理器已启动")
+        print("[NexusKit] 增强心跳管理器已启动")
     }
 
     private func stopHeartbeat() async {
         if let manager = heartbeatManager {
             await manager.stop()
-            print("[TCPConnection] 增强心跳管理器已停止")
+            print("[NexusKit] 增强心跳管理器已停止")
         }
         heartbeatManager = nil
     }
@@ -590,7 +590,7 @@ public final class TCPConnection: Connection, @unchecked Sendable {
             }
         }
 
-        print("[TCPConnection] 网络监控已启动")
+        print("[NexusKit] 网络监控已启动")
     }
 
     private func stopNetworkMonitoring() async {
@@ -599,37 +599,37 @@ public final class TCPConnection: Connection, @unchecked Sendable {
 
         if let monitor = networkMonitor {
             await monitor.stop()
-            print("[TCPConnection] 网络监控已停止")
+            print("[NexusKit] 网络监控已停止")
         }
     }
 
     private func handleNetworkChange(_ change: NetworkMonitor.NetworkChange) async {
         switch change {
         case .connected(let status):
-            print("[TCPConnection] 网络已连接: \(status)")
+            print("[NexusKit] 网络已连接: \(status)")
 
             // 如果当前断开，尝试快速重连
             if getState() == .disconnected {
-                print("[TCPConnection] 检测到网络恢复，尝试重连")
+                print("[NexusKit] 检测到网络恢复，尝试重连")
                 try? await connect()
             }
 
         case .disconnected:
-            print("[TCPConnection] 网络已断开")
+            print("[NexusKit] 网络已断开")
 
         case .interfaceChanged(let from, let to):
-            print("[TCPConnection] 网络接口切换: \(String(describing: from)) → \(String(describing: to))")
+            print("[NexusKit] 网络接口切换: \(String(describing: from)) → \(String(describing: to))")
 
             // 网络接口切换，可能需要重建连接
             if getState() == .connected {
-                print("[TCPConnection] 检测到接口切换，准备重连")
+                print("[NexusKit] 检测到接口切换，准备重连")
                 await disconnect(reason: .clientInitiated)
                 try? await Task.sleep(nanoseconds: 3_000_000_000) // 等待3秒
                 try? await connect()
             }
 
         case .statusChanged(let status):
-            print("[TCPConnection] 网络状态变化: \(status)")
+            print("[NexusKit] 网络状态变化: \(status)")
             // 可以根据需要处理状态变化
         }
     }
@@ -752,16 +752,16 @@ public final class TCPConnection: Connection, @unchecked Sendable {
         targetPort: UInt16,
         proxyConfig: NexusProxyConfiguration
     ) async throws {
-        print("[TCPConnection] 执行 SOCKS5 握手")
+        print("[NexusKit] 执行 SOCKS5 握手")
 
         let handler = SOCKS5ProxyHandler(configuration: proxyConfig)
         let targetEndpoint = Endpoint.tcp(host: targetHost, port: targetPort)
 
         do {
             try await handler.negotiate(through: connection, to: targetEndpoint)
-            print("[TCPConnection] SOCKS5 握手成功")
+            print("[NexusKit] SOCKS5 握手成功")
         } catch {
-            print("[TCPConnection] SOCKS5 握手失败: \(error)")
+            print("[NexusKit] SOCKS5 握手失败: \(error)")
             throw NexusError.proxyConnectionFailed(reason: error.localizedDescription)
         }
     }

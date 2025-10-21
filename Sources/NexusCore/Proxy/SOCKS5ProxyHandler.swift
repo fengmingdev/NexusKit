@@ -73,7 +73,7 @@ public actor SOCKS5ProxyHandler {
         through connection: NWConnection,
         to destination: Endpoint
     ) async throws {
-        print("[SOCKS5] 开始代理握手流程")
+        print("[NexusKit] 开始代理握手流程")
 
         // 1. 认证协商
         try await sendAuthenticationRequest(through: connection)
@@ -93,7 +93,7 @@ public actor SOCKS5ProxyHandler {
         // 4. 接收连接响应
         try await receiveConnectResponse(from: connection)
 
-        print("[SOCKS5] 代理握手完成")
+        print("[NexusKit] 代理握手完成")
     }
 
     // MARK: - Authentication
@@ -113,7 +113,7 @@ public actor SOCKS5ProxyHandler {
         request.append(contentsOf: methods)
 
         try await send(data: request, through: connection)
-        print("[SOCKS5] 已发送认证方法: \(methods)")
+        print("[NexusKit] 已发送认证方法: \(methods)")
     }
 
     /// 接收认证方法响应
@@ -139,7 +139,7 @@ public actor SOCKS5ProxyHandler {
             throw NexusError.proxyConnectionFailed(reason: "服务器不接受任何认证方法")
         }
 
-        print("[SOCKS5] 服务器选择认证方法: \(authMethod)")
+        print("[NexusKit] 服务器选择认证方法: \(authMethod)")
         return authMethod
     }
 
@@ -165,7 +165,7 @@ public actor SOCKS5ProxyHandler {
         authRequest.append(passwordData)
 
         try await send(data: authRequest, through: connection)
-        print("[SOCKS5] 已发送用户名密码认证")
+        print("[NexusKit] 已发送用户名密码认证")
 
         // 接收认证响应
         let authResponse = try await receive(length: 2, from: connection)
@@ -181,7 +181,7 @@ public actor SOCKS5ProxyHandler {
             throw NexusError.proxyAuthenticationFailed
         }
 
-        print("[SOCKS5] 用户名密码认证成功")
+        print("[NexusKit] 用户名密码认证成功")
     }
 
     // MARK: - Connection Request
@@ -203,7 +203,7 @@ public actor SOCKS5ProxyHandler {
         try appendDestinationPort(to: &request, destination: destination)
 
         try await send(data: request, through: connection)
-        print("[SOCKS5] 已发送连接请求: \(destination)")
+        print("[NexusKit] 已发送连接请求: \(destination)")
     }
 
     /// 接收连接响应
@@ -236,7 +236,7 @@ public actor SOCKS5ProxyHandler {
         try await readBindAddress(addressType: addressType, from: connection)
         _ = try await receive(length: 2, from: connection) // 端口
 
-        print("[SOCKS5] 连接响应成功")
+        print("[NexusKit] 连接响应成功")
     }
 
     // MARK: - Helper Methods

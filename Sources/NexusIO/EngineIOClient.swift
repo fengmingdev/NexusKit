@@ -194,7 +194,7 @@ public actor EngineIOClient {
                     break
                 }
             } catch {
-                print("[EngineIO] 处理消息失败: \(error)")
+                print("[NexusKit] 处理消息失败: \(error)")
             }
         }
     }

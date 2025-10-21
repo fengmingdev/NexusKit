@@ -184,7 +184,7 @@ public actor MetricsMiddleware: Middleware {
         let summary = self.summary()
         let sinceLastReport = Date().timeIntervalSince(lastReportTime)
 
-        print("\n📊 [Metrics Report]")
+        print("\n📊 [NexusKit]")
         print("   Duration: \(String(format: "%.1f", summary.duration))s")
         print("   Messages: ↑ \(summary.messagesSent) | ↓ \(summary.messagesReceived)")
         print("   Bytes: ↑ \(formatBytes(summary.totalBytesSent)) | ↓ \(formatBytes(summary.totalBytesReceived))")
@@ -203,7 +203,7 @@ public actor MetricsMiddleware: Middleware {
     private func printFinalReport() async {
         let summary = self.summary()
 
-        print("\n📊 [Final Metrics Report]")
+        print("\n📊 [NexusKit] Final Report")
         print("   Total Duration: \(String(format: "%.1f", summary.duration))s")
         print("   Total Messages: ↑ \(summary.messagesSent) | ↓ \(summary.messagesReceived)")
         print("   Total Bytes: ↑ \(formatBytes(summary.totalBytesSent)) | ↓ \(formatBytes(summary.totalBytesReceived))")

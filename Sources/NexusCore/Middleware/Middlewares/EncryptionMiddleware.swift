@@ -140,7 +140,7 @@ public struct EncryptionMiddleware: Middleware {
 
             if enableStats {
                 let overhead = encrypted.count - data.count
-                print("🔒 [Encryption] Original: \(data.count) bytes, Encrypted: \(encrypted.count) bytes, Overhead: \(overhead) bytes")
+                print("🔒 [NexusKit] Original: \(data.count) bytes, Encrypted: \(encrypted.count) bytes, Overhead: \(overhead) bytes")
             }
 
             return encrypted
@@ -155,7 +155,7 @@ public struct EncryptionMiddleware: Middleware {
             let decrypted = try decrypt(data)
 
             if enableStats {
-                print("🔓 [Decryption] Encrypted: \(data.count) bytes, Decrypted: \(decrypted.count) bytes")
+                print("🔓 [NexusKit] Encrypted: \(data.count) bytes, Decrypted: \(decrypted.count) bytes")
             }
 
             return decrypted

@@ -64,6 +64,48 @@ final class BuiltinPluginsTests: XCTestCase {
         await plugin.handleError(testError, context: context)
     }
     
+    func testLoggingPluginUnifiedPrefix() async throws {
+        // 测试 LoggingPlugin 使用统一的 [NexusKit] 前缀
+        let plugin = LoggingPlugin(logLevel: .debug, logDataContent: true)
+        let context = PluginContext(
+            connectionId: "test-conn",
+            remoteHost: "example.com",
+            remotePort: 8080
+        )
+        
+        // 重定向标准输出以捕获日志
+        let originalStdout = dup(STDOUT_FILENO)
+        let pipe = Pipe()
+        dup2(pipe.fileHandleForWriting.fileDescriptor, STDOUT_FILENO)
+        
+        // 执行会产生日志的操作
+        try await plugin.willConnect(context)
+        await plugin.didConnect(context)
+        
+        let testData = "Test message".data(using: .utf8)!
+        _ = try await plugin.willSend(testData, context: context)
+        await plugin.didSend(testData, context: context)
+        
+        let error = NexusError.connectionFailed("Test error")
+        await plugin.handleError(error, context: context)
+        
+        // 恢复标准输出
+        dup2(originalStdout, STDOUT_FILENO)
+        close(originalStdout)
+        pipe.fileHandleForWriting.closeFile()
+        
+        // 读取捕获的输出
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        let output = String(data: data, encoding: .utf8) ?? ""
+        pipe.fileHandleForReading.closeFile()
+        
+        // 验证所有日志都包含 [NexusKit] 前缀
+        let lines = output.components(separatedBy: .newlines).filter { !$0.isEmpty }
+        for line in lines {
+            XCTAssertTrue(line.contains("[NexusKit]"), "日志行应包含 [NexusKit] 前缀: \(line)")
+        }
+    }
+    
     func testLoggingPluginDisabled() async throws {
         let plugin = LoggingPlugin(isEnabled: false)
         

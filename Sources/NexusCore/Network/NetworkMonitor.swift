@@ -99,7 +99,7 @@ public actor NetworkMonitor {
     private func startMonitoring() {
         guard !isMonitoring else { return }
 
-        print("[NetworkMonitor] 开始监控网络状态")
+        print("[NexusKit] 开始监控网络状态")
         isMonitoring = true
 
         monitor.pathUpdateHandler = { [weak self] path in
@@ -114,7 +114,7 @@ public actor NetworkMonitor {
     private func stopMonitoring() {
         guard isMonitoring else { return }
 
-        print("[NetworkMonitor] 停止监控网络状态")
+        print("[NexusKit] 停止监控网络状态")
         isMonitoring = false
         monitor.cancel()
         continuation?.finish()
@@ -145,7 +145,7 @@ public actor NetworkMonitor {
             path: path
         )
 
-        print("[NetworkMonitor] 网络状态更新: \(newStatus.description)")
+        print("[NexusKit] 网络状态更新: \(newStatus.description)")
 
         // 检测变化类型
         if let oldStatus = currentStatus {

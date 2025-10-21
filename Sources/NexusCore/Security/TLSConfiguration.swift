@@ -354,7 +354,7 @@ extension NWParameters {
             completion(true)
         } else {
             if let error = error {
-                print("[TLS] 证书验证失败: \(error)")
+                print("[NexusKit] 证书验证失败: \(error)")
             }
             completion(false)
         }
@@ -383,7 +383,7 @@ extension NWParameters {
         let result = SecTrustEvaluateWithError(trust, &error)
 
         if let error = error {
-            print("[TLS] 自定义证书验证失败: \(error)")
+            print("[NexusKit] 自定义证书验证失败: \(error)")
         }
 
         completion(result)
@@ -417,7 +417,7 @@ extension NWParameters {
             }
         }
 
-        print("[TLS] 证书固定验证失败: 未找到匹配的证书")
+        print("[NexusKit] 证书固定验证失败: 未找到匹配的证书")
         completion(false)
     }
 

@@ -308,7 +308,7 @@ public actor SocketIOClient {
             // 默认命名空间，由客户端自己处理
             await handlePacket(packet)
         } catch {
-            print("[SocketIO] 解析消息失败: \(error)")
+            print("[NexusKit] 解析消息失败: \(error)")
         }
     }
     

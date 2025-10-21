@@ -143,7 +143,7 @@ public actor HeartbeatManager {
         updateState(.active)
         startTimer()
 
-        print("[HeartbeatManager] 已启动 (间隔: \(currentInterval)s)")
+        print("[NexusKit] 已启动 (间隔: \(currentInterval)s)")
     }
 
     /// 停止心跳
@@ -152,7 +152,7 @@ public actor HeartbeatManager {
         timer = nil
         updateState(.idle)
 
-        print("[HeartbeatManager] 已停止")
+        print("[NexusKit] 已停止")
     }
 
     /// 记录心跳响应
@@ -182,7 +182,7 @@ public actor HeartbeatManager {
             updateState(.active)
         }
 
-        print("[HeartbeatManager] 心跳响应 (延迟: \(Int(latency * 1000))ms)")
+        print("[NexusKit] 心跳响应 (延迟: \(Int(latency * 1000))ms)")
     }
 
     /// 重置统计
@@ -242,9 +242,9 @@ public actor HeartbeatManager {
             sentCount += 1
             lastSentTime = Date()
 
-            print("[HeartbeatManager] 心跳已发送 (#\(sentCount))")
+            print("[NexusKit] 心跳已发送 (#\(sentCount))")
         } catch {
-            print("[HeartbeatManager] 心跳发送失败: \(error)")
+            print("[NexusKit] 心跳发送失败: \(error)")
             handleHeartbeatFailure()
         }
     }
@@ -270,7 +270,7 @@ public actor HeartbeatManager {
                 updateState(.warning)
             }
 
-            print("[HeartbeatManager] 心跳丢失 (连续: \(consecutiveLostCount))")
+            print("[NexusKit] 心跳丢失 (连续: \(consecutiveLostCount))")
         }
     }
 
@@ -306,7 +306,7 @@ public actor HeartbeatManager {
         timer?.cancel()
         startTimer()
 
-        print("[HeartbeatManager] 间隔调整为: \(String(format: "%.1fs", currentInterval))")
+        print("[NexusKit] 间隔调整为: \(String(format: \"%.1fs\", currentInterval))")
     }
 
     /// 更新状态
@@ -316,7 +316,7 @@ public actor HeartbeatManager {
         let oldState = state
         state = newState
 
-        print("[HeartbeatManager] 状态变化: \(oldState) → \(newState)")
+        print("[NexusKit] 状态变化: \(oldState) → \(newState)")
 
         Task {
             await onStateChanged?(newState)

@@ -22,7 +22,7 @@ public protocol LogFormatter: Sendable {
 ///
 /// 输出格式：
 /// ```
-/// 2025-10-20 15:30:45.123 [INFO] 🟢 MyModule - Connection established
+/// [NexusKit] 2025-10-20 15:30:45.123 [INFO] 🟢 MyModule - Connection established
 /// ```
 public struct DefaultLogFormatter: LogFormatter, Sendable {
 
@@ -40,23 +40,31 @@ public struct DefaultLogFormatter: LogFormatter, Sendable {
 
     /// 时间戳格式
     public let timestampFormat: String
+    
+    /// 统一前缀
+    public let prefix: String
 
     public init(
         includeTimestamp: Bool = true,
         includeLocation: Bool = false,
         includeSymbol: Bool = true,
         includeMetadata: Bool = true,
-        timestampFormat: String = "yyyy-MM-dd HH:mm:ss.SSS"
+        timestampFormat: String = "yyyy-MM-dd HH:mm:ss.SSS",
+        prefix: String = "NexusKit"
     ) {
         self.includeTimestamp = includeTimestamp
         self.includeLocation = includeLocation
         self.includeSymbol = includeSymbol
         self.includeMetadata = includeMetadata
         self.timestampFormat = timestampFormat
+        self.prefix = prefix
     }
 
     public func format(_ message: LogMessage) -> String {
         var parts: [String] = []
+
+        // 统一前缀
+        parts.append("[\(prefix)]")
 
         // 时间戳
         if includeTimestamp {
@@ -177,22 +185,18 @@ public struct JSONLogFormatter: LogFormatter, Sendable {
 
 /// 紧凑日志格式化器
 ///
-/// 输出格式：
-/// ```
-/// 15:30:45 I Connection established
-/// ```
+/// 输出格式：`[NexusKit] [INFO] Connection established`
 public struct CompactLogFormatter: LogFormatter, Sendable {
-
-    public init() {}
+    
+    /// 统一前缀
+    public let prefix: String
+    
+    public init(prefix: String = "NexusKit") {
+        self.prefix = prefix
+    }
 
     public func format(_ message: LogMessage) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss"
-        let time = formatter.string(from: message.timestamp)
-
-        let levelChar = String(message.level.label.prefix(1))
-
-        return "\(time) \(levelChar) \(message.message)"
+        return "[\(prefix)] [\(message.level.label)] \(message.message)"
     }
 }
 
@@ -202,36 +206,32 @@ public struct CompactLogFormatter: LogFormatter, Sendable {
 ///
 /// 输出格式：
 /// ```
-/// ========================================
-/// Time:     2025-10-20 15:30:45.123
-/// Level:    INFO 🟢
-/// Message:  Connection established
-/// Location: TCPConnection.swift:42 connect()
+/// [NexusKit] 2025-10-20 15:30:45.123 [INFO] 🟢 Connection established
+/// File: TCPConnection.swift:42 connect()
 /// Metadata: host=localhost, port=8080
-/// ========================================
 /// ```
 public struct DetailedLogFormatter: LogFormatter, Sendable {
-
-    public init() {}
+    
+    /// 统一前缀
+    public let prefix: String
+    
+    public init(prefix: String = "NexusKit") {
+        self.prefix = prefix
+    }
 
     public func format(_ message: LogMessage) -> String {
         var lines: [String] = []
 
-        lines.append("========================================")
-
-        // 时间戳
+        // 主要日志行
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
-        lines.append("Time:     \(formatter.string(from: message.timestamp))")
+        let timestamp = formatter.string(from: message.timestamp)
 
-        // 日志级别
-        lines.append("Level:    \(message.level.label) \(message.level.symbol)")
-
-        // 消息内容
-        lines.append("Message:  \(message.message)")
+        let mainLine = "[\(prefix)] \(timestamp) [\(message.level.label)] \(message.level.symbol) \(message.message)"
+        lines.append(mainLine)
 
         // 文件位置
-        lines.append("Location: \(message.fileName):\(message.line) \(message.function)")
+        lines.append("File: \(message.fileName):\(message.line) \(message.function)")
 
         // 元数据
         if !message.metadata.isEmpty {
@@ -243,10 +243,8 @@ public struct DetailedLogFormatter: LogFormatter, Sendable {
 
         // 错误信息
         if let error = message.error {
-            lines.append("Error:    \(error)")
+            lines.append("Error: \(error)")
         }
-
-        lines.append("========================================")
 
         return lines.joined(separator: "\n")
     }
@@ -274,27 +272,18 @@ public struct CustomLogFormatter: LogFormatter, Sendable {
 
 /// 模板日志格式化器
 ///
-/// 使用模板字符串格式化日志。
+/// 支持自定义模板格式，可用占位符：
+/// - `{prefix}`: 统一前缀
+/// - `{timestamp}`: 时间戳
+/// - `{level}`: 日志级别
+/// - `{symbol}`: 级别符号
+/// - `{message}`: 消息内容
+/// - `{metadata}`: 元数据
+/// - `{file}`: 文件名
+/// - `{function}`: 函数名
+/// - `{line}`: 行号
 ///
-/// ## 支持的占位符
-///
-/// - `{timestamp}` - 时间戳
-/// - `{level}` - 日志级别
-/// - `{symbol}` - 日志符号
-/// - `{message}` - 消息内容
-/// - `{file}` - 文件名
-/// - `{function}` - 函数名
-/// - `{line}` - 行号
-/// - `{metadata}` - 元数据
-/// - `{error}` - 错误信息
-///
-/// ## 示例
-///
-/// ```swift
-/// let formatter = TemplateLogFormatter(
-///     template: "[{timestamp}] {level} - {message} ({file}:{line})"
-/// )
-/// ```
+/// 默认模板：`[{prefix}] {timestamp} [{level}] {symbol} {message}`
 public struct TemplateLogFormatter: LogFormatter, Sendable {
 
     /// 模板字符串
@@ -302,95 +291,75 @@ public struct TemplateLogFormatter: LogFormatter, Sendable {
 
     /// 时间戳格式
     public let timestampFormat: String
+    
+    /// 统一前缀
+    public let prefix: String
 
     public init(
-        template: String = "{timestamp} [{level}] {symbol} {message}",
-        timestampFormat: String = "yyyy-MM-dd HH:mm:ss.SSS"
+        template: String = "[{prefix}] {timestamp} [{level}] {symbol} {message}",
+        timestampFormat: String = "yyyy-MM-dd HH:mm:ss.SSS",
+        prefix: String = "NexusKit"
     ) {
         self.template = template
         self.timestampFormat = timestampFormat
+        self.prefix = prefix
     }
 
     public func format(_ message: LogMessage) -> String {
         var result = template
 
         // 替换占位符
-        let replacements: [String: String] = [
-            "{timestamp}": formatTimestamp(message.timestamp),
-            "{level}": message.level.label,
-            "{symbol}": message.level.symbol,
-            "{message}": message.message,
-            "{file}": message.fileName,
-            "{function}": message.function,
-            "{line}": String(message.line),
-            "{metadata}": formatMetadata(message.metadata),
-            "{error}": message.error.map { String(describing: $0) } ?? ""
-        ]
-
-        for (placeholder, value) in replacements {
-            result = result.replacingOccurrences(of: placeholder, with: value)
-        }
+        result = result.replacingOccurrences(of: "{prefix}", with: prefix)
+        result = result.replacingOccurrences(of: "{timestamp}", with: formatTimestamp(message.timestamp))
+        result = result.replacingOccurrences(of: "{level}", with: message.level.label)
+        result = result.replacingOccurrences(of: "{symbol}", with: message.level.symbol)
+        result = result.replacingOccurrences(of: "{message}", with: message.message)
+        result = result.replacingOccurrences(of: "{metadata}", with: formatMetadata(message.metadata))
+        result = result.replacingOccurrences(of: "{file}", with: message.fileName)
+        result = result.replacingOccurrences(of: "{function}", with: message.function)
+        result = result.replacingOccurrences(of: "{line}", with: "\(message.line)")
 
         return result
     }
 
-    /// 格式化时间戳
     private func formatTimestamp(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = timestampFormat
         return formatter.string(from: date)
     }
 
-    /// 格式化元数据
     private func formatMetadata(_ metadata: [String: String]) -> String {
         guard !metadata.isEmpty else { return "" }
-        return metadata
-            .map { "\($0.key)=\($0.value)" }
-            .joined(separator: ", ")
+        return metadata.map { "\($0.key)=\($0.value)" }.joined(separator: ", ")
     }
 }
 
 // MARK: - Color Log Formatter
 
-/// 彩色日志格式化器（支持 ANSI 转义码）
+/// 彩色日志格式化器
+///
+/// 为不同日志级别添加颜色，输出格式：`[NexusKit] 15:30:45 [INFO] 🟢 Connection established`
 public struct ColorLogFormatter: LogFormatter, Sendable {
-
-    /// 是否启用颜色
-    public let enabled: Bool
-
-    public init(enabled: Bool = true) {
-        self.enabled = enabled
+    
+    /// 统一前缀
+    public let prefix: String
+    
+    public init(prefix: String = "NexusKit") {
+        self.prefix = prefix
     }
 
     public func format(_ message: LogMessage) -> String {
-        guard enabled else {
-            return DefaultLogFormatter().format(message)
-        }
-
         let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss.SSS"
+        formatter.dateFormat = "HH:mm:ss"
         let time = formatter.string(from: message.timestamp)
 
-        let levelColor = colorCode(for: message.level)
-        let reset = "\u{001B}[0m"
+        let colorCode = colorForLevel(message.level)
+        let resetCode = "\u{001B}[0m"
 
-        var parts: [String] = []
-        parts.append("[\(time)]")
-        parts.append("\(levelColor)\(message.level.symbol) \(message.level.label)\(reset)")
-        parts.append(message.message)
-
-        if !message.metadata.isEmpty {
-            let metadataStr = message.metadata
-                .map { "\(colorCode(for: .info))\($0.key)\(reset)=\($0.value)" }
-                .joined(separator: ", ")
-            parts.append("[\(metadataStr)]")
-        }
-
-        return parts.joined(separator: " ")
+        return "[\(prefix)] \(colorCode)\(time) [\(message.level.label)] \(message.level.symbol) \(message.message)\(resetCode)"
     }
 
-    /// 获取级别对应的颜色代码
-    private func colorCode(for level: LogLevel) -> String {
+    private func colorForLevel(_ level: LogLevel) -> String {
         switch level {
         case .trace:
             return "\u{001B}[37m"  // 白色
@@ -403,7 +372,7 @@ public struct ColorLogFormatter: LogFormatter, Sendable {
         case .error:
             return "\u{001B}[31m"  // 红色
         case .critical:
-            return "\u{001B}[35m"  // 洋红色
+            return "\u{001B}[35m"  // 紫色
         }
     }
 }

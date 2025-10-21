@@ -168,9 +168,12 @@ public struct LoggingMiddleware: Middleware {
     }
 
     private func logMessage(_ message: String, level: LogLevel, error: Error? = nil) async {
+        // 使用统一的 NexusKit 前缀
+        let prefixedMessage = "[NexusKit] \(message)"
+        
         await log(
             level: level,
-            message,
+            prefixedMessage,
             error: error,
             logger: loggerName
         )
@@ -200,52 +203,58 @@ public struct PrintLoggingMiddleware: Middleware {
     /// 是否显示数据内容
     private let showData: Bool
 
-    /// 初始化
-    /// - Parameters:
-    ///   - showTimestamp: 是否显示时间戳，默认为 `true`
-    ///   - showData: 是否显示数据内容，默认为 `false`
+    /// 时间戳格式化器
+    private let timestampFormatter = DateFormatter()
+
     public init(showTimestamp: Bool = true, showData: Bool = false) {
         self.showTimestamp = showTimestamp
         self.showData = showData
+        timestampFormatter.dateFormat = "HH:mm:ss.SSS"
     }
 
     public func handleOutgoing(_ data: Data, context: MiddlewareContext) async throws -> Data {
-        let timestamp = showTimestamp ? "[\(formatTimestamp())] " : ""
-        var message = "\(timestamp)📤 发送: \(data.count) 字节"
-
-        if showData, let string = String(data: data.prefix(100), encoding: .utf8) {
-            message += " -> \"\(string)\""
+        var message = "[NexusKit] 📤 Outgoing: \(data.count) bytes"
+        
+        if showTimestamp {
+            message = "\(formatTimestamp()) \(message)"
         }
-
+        
+        if showData && !data.isEmpty {
+            let preview = String(data: data.prefix(100), encoding: .utf8) ?? data.prefix(100).hexString
+            message += " - \(preview)"
+        }
+        
         print(message)
         return data
     }
 
     public func handleIncoming(_ data: Data, context: MiddlewareContext) async throws -> Data {
-        let timestamp = showTimestamp ? "[\(formatTimestamp())] " : ""
-        var message = "\(timestamp)📥 接收: \(data.count) 字节"
-
-        if showData, let string = String(data: data.prefix(100), encoding: .utf8) {
-            message += " <- \"\(string)\""
+        var message = "[NexusKit] 📥 Incoming: \(data.count) bytes"
+        
+        if showTimestamp {
+            message = "\(formatTimestamp()) \(message)"
         }
-
+        
+        if showData && !data.isEmpty {
+            let preview = String(data: data.prefix(100), encoding: .utf8) ?? data.prefix(100).hexString
+            message += " - \(preview)"
+        }
+        
         print(message)
         return data
     }
 
     public func onConnect(connection: any Connection) async {
-        let timestamp = showTimestamp ? "[\(formatTimestamp())] " : ""
-        print("\(timestamp)🟢 已连接: \(connection.id)")
+        let message = showTimestamp ? "\(formatTimestamp()) [NexusKit] ✅ Connected: \(connection.id)" : "[NexusKit] ✅ Connected: \(connection.id)"
+        print(message)
     }
 
     public func onDisconnect(connection: any Connection, reason: DisconnectReason) async {
-        let timestamp = showTimestamp ? "[\(formatTimestamp())] " : ""
-        print("\(timestamp)🔴 已断开: \(connection.id) - \(reason)")
+        let message = showTimestamp ? "\(formatTimestamp()) [NexusKit] ❌ Disconnected: \(connection.id)" : "[NexusKit] ❌ Disconnected: \(connection.id)"
+        print(message)
     }
 
     private func formatTimestamp() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss.SSS"
-        return formatter.string(from: Date())
+        return timestampFormatter.string(from: Date())
     }
 }

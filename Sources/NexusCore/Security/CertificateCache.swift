@@ -69,7 +69,7 @@ public actor CertificateCache {
         }
 
         if !expiredKeys.isEmpty {
-            print("[CertificateCache] 已清除 \(expiredKeys.count) 个过期证书")
+            print("[NexusKit] 已清除 \(expiredKeys.count) 个过期证书")
         }
     }
 
@@ -77,14 +77,14 @@ public actor CertificateCache {
     public func clearAll() {
         let count = cache.count
         cache.removeAll()
-        print("[CertificateCache] 已清除所有证书缓存 (\(count) 个)")
+        print("[NexusKit] 已清除所有证书缓存 (\(count) 个)")
     }
 
     /// 清除指定证书的缓存
     public func clearCertificate(data: Data) {
         let cacheKey = generateCacheKey(data: data)
         if cache.removeValue(forKey: cacheKey) != nil {
-            print("[CertificateCache] 已清除证书缓存: \(cacheKey)")
+            print("[NexusKit] 已清除证书缓存: \(cacheKey)")
         }
     }
 
@@ -169,7 +169,7 @@ public actor CertificateCache {
         }
 
         cache.removeValue(forKey: oldestKey)
-        print("[CertificateCache] 已驱逐最旧证书: \(oldestKey)")
+        print("[NexusKit] 已驱逐最旧证书: \(oldestKey)")
     }
 }
 

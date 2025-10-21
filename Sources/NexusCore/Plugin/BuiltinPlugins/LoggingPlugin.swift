@@ -47,20 +47,20 @@ public struct LoggingPlugin: NexusPlugin {
     // MARK: - Lifecycle Hooks
     
     public func willConnect(_ context: PluginContext) async throws {
-        log(.info, "🔌 [WillConnect] \(context.connectionId) -> \(context.remoteHost ?? "unknown"):\(context.remotePort ?? 0)")
+        log("🔌 [WillConnect] \(context.connectionId) -> \(context.remoteHost ?? "unknown"):\(context.remotePort ?? 0)", level: .info)
     }
     
     public func didConnect(_ context: PluginContext) async {
-        log(.info, "✅ [DidConnect] \(context.connectionId) connected to \(context.remoteHost ?? "unknown"):\(context.remotePort ?? 0)")
+        log("✅ [DidConnect] \(context.connectionId) connected to \(context.remoteHost ?? "unknown"):\(context.remotePort ?? 0)", level: .info)
     }
     
     public func willDisconnect(_ context: PluginContext) async {
         let duration = context.connectionDuration ?? 0
-        log(.info, "🔌 [WillDisconnect] \(context.connectionId) (duration: \(String(format: "%.2f", duration))s, bytes: \(context.totalBytes))")
+        log("🔌 [WillDisconnect] \(context.connectionId) (duration: \(String(format: "%.2f", duration))s, bytes: \(context.totalBytes))", level: .info)
     }
     
     public func didDisconnect(_ context: PluginContext) async {
-        log(.info, "❌ [DidDisconnect] \(context.connectionId) disconnected")
+        log("❌ [DidDisconnect] \(context.connectionId) disconnected", level: .info)
     }
     
     // MARK: - Data Hooks
@@ -68,43 +68,43 @@ public struct LoggingPlugin: NexusPlugin {
     public func willSend(_ data: Data, context: PluginContext) async throws -> Data {
         if logDataContent {
             let preview = dataPreview(data)
-            log(.debug, "📤 [WillSend] \(context.connectionId) sending \(data.count) bytes: \(preview)")
+            log("📤 [WillSend] \(context.connectionId) sending \(data.count) bytes: \(preview)", level: .debug)
         } else {
-            log(.debug, "📤 [WillSend] \(context.connectionId) sending \(data.count) bytes")
+            log("📤 [WillSend] \(context.connectionId) sending \(data.count) bytes", level: .debug)
         }
         return data
     }
     
     public func didSend(_ data: Data, context: PluginContext) async {
-        log(.verbose, "✓ [DidSend] \(context.connectionId) sent \(data.count) bytes")
+        log("✓ [DidSend] \(context.connectionId) sent \(data.count) bytes", level: .verbose)
     }
     
     public func willReceive(_ data: Data, context: PluginContext) async throws -> Data {
         if logDataContent {
             let preview = dataPreview(data)
-            log(.debug, "📥 [WillReceive] \(context.connectionId) receiving \(data.count) bytes: \(preview)")
+            log("📥 [WillReceive] \(context.connectionId) receiving \(data.count) bytes: \(preview)", level: .debug)
         } else {
-            log(.debug, "📥 [WillReceive] \(context.connectionId) receiving \(data.count) bytes")
+            log("📥 [WillReceive] \(context.connectionId) receiving \(data.count) bytes", level: .debug)
         }
         return data
     }
     
     public func didReceive(_ data: Data, context: PluginContext) async {
-        log(.verbose, "✓ [DidReceive] \(context.connectionId) received \(data.count) bytes")
+        log("✓ [DidReceive] \(context.connectionId) received \(data.count) bytes", level: .verbose)
     }
     
     // MARK: - Error Hooks
     
     public func handleError(_ error: Error, context: PluginContext) async {
-        log(.error, "⚠️ [Error] \(context.connectionId): \(error.localizedDescription)")
+        log("⚠️ [Error] \(context.connectionId): \(error.localizedDescription)", level: .error)
     }
     
     // MARK: - Private Methods
     
     /// 记录日志
-    private func log(_ level: NexusLogLevel, _ message: String) {
-        guard logLevel.shouldLog(level: level) else { return }
-        print("[\(level.rawValue)] [LoggingPlugin] \(message)")
+    private func log(_ message: String, level: NexusLogLevel = .info) {
+        guard isEnabled && logLevel.shouldLog(level: level) else { return }
+        print("[NexusKit] [\(level.rawValue)] \(message)")
     }
     
     /// 数据预览

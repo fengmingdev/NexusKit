@@ -93,7 +93,7 @@ public actor RetryPlugin: NexusPlugin {
             let retryCount = retryCounters[context.connectionId] ?? 0
             let delay = calculateRetryDelay(retryCount: retryCount)
             
-            print("🔄 [RetryPlugin] Error on \(context.connectionId): \(error.localizedDescription)")
+            print("🔄 [NexusKit] Error on \(context.connectionId): \(error.localizedDescription)")
             print("   Will retry in \(String(format: "%.2f", delay))s (attempt \(retryCount + 1)/\(maxRetryCount))")
             
             // 增加重试计数
@@ -104,7 +104,7 @@ public actor RetryPlugin: NexusPlugin {
                 await delegate.retryPlugin(self, shouldRetryConnection: context.connectionId, afterDelay: delay)
             }
         } else {
-            print("❌ [RetryPlugin] Error on \(context.connectionId) is not retryable or exceeded max retries")
+            print("❌ [NexusKit] Error on \(context.connectionId) is not retryable or exceeded max retries")
         }
     }
     

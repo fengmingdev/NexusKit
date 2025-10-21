@@ -220,7 +220,7 @@ public final class TCPConnectionBuilder: @unchecked Sendable {
                 allowSelfSigned: false
             )
         } catch {
-            print("[TCPConnectionBuilder] 加载 P12 证书失败: \(error)")
+            print("[NexusKit] 加载 P12 证书失败: \(error)")
         }
 
         return self
