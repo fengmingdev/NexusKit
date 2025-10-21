@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'NexusKit'
-  s.version          = '1.0.0'
+  s.version          = '1.1.0'
   s.summary          = '企业级Swift网络库 - 功能完善、性能卓越、生产就绪'
   s.description      = <<-DESC
     NexusKit 是一个现代化的Swift网络库，整合了 CocoaAsyncSocket、socket.io-client-swift 等优秀开源库的特性。
