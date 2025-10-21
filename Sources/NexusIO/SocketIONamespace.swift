@@ -137,10 +137,15 @@ public actor SocketIONamespace {
             if let eventName = await extractEventName(from: packet) {
                 let eventData = await extractEventData(from: packet)
 
-                // 触发事件处理器 (在actor内部,eventData 是局部变量,可以安全使用)
+                // 触发事件处理器
+                // 注意: eventData 是 [Any]，不符合 Sendable
+                // 但它是从 packet 中提取的局部数据，handlers 会立即消费它
+                // 使用 withoutActuallyEscaping 确保数据不会逃逸
                 if let handlers = eventHandlers[eventName] {
-                    for handler in handlers {
-                        await handler(eventData)
+                    await withoutActuallyEscaping(eventData) { escapableData in
+                        for handler in handlers {
+                            await handler(escapableData)
+                        }
                     }
                 }
 
