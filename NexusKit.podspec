@@ -37,7 +37,7 @@ Pod::Spec.new do |s|
   s.ios.deployment_target = '13.0'
   s.osx.deployment_target = '10.15'
   # s.tvos.deployment_target = '13.0'  # 暂时禁用 tvOS 支持
-  s.watchos.deployment_target = '6.0'
+  # s.watchos.deployment_target = '6.0'  # 暂时禁用 watchOS 支持
 
   s.swift_versions = ['6.0']
 
