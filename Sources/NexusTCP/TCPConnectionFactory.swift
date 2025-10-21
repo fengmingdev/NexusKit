@@ -73,8 +73,8 @@ public final class TCPConnectionBuilder {
     private var connectTimeout: TimeInterval?
     private var readWriteTimeout: TimeInterval?
     private var heartbeatConfig: HeartbeatConfiguration?
-    private var tlsConfig: NexusCore.TLSConfiguration?
-    private var proxyConfig: NexusCore.ProxyConfiguration?
+    private var tlsConfig: TLSConfiguration?
+    private var proxyConfig: ProxyConfiguration?
     private var lifecycleHooks: LifecycleHooks = LifecycleHooks()
     private var customMetadata: [String: String] = [:]
 
@@ -176,7 +176,7 @@ public final class TCPConnectionBuilder {
     @discardableResult
     public func enableTLS(certificate: TLSCertificate? = nil) -> Self {
         // 使用增强的 TLSConfiguration
-        self.tlsConfig = NexusCore.TLSConfiguration(
+        self.tlsConfig = TLSConfiguration(
             enabled: true,
             version: .automatic,
             p12Certificate: nil,
@@ -191,7 +191,7 @@ public final class TCPConnectionBuilder {
 
     /// 配置 TLS (增强版)
     @discardableResult
-    public func tls(_ config: NexusCore.TLSConfiguration) -> Self {
+    public func tls(_ config: TLSConfiguration) -> Self {
         self.tlsConfig = config
         return self
     }
@@ -201,15 +201,15 @@ public final class TCPConnectionBuilder {
     public func tlsWithP12(
         named: String,
         password: String,
-        validation: NexusCore.TLSConfiguration.ValidationPolicy = .system
+        validation: TLSConfiguration.ValidationPolicy = .system
     ) -> Self {
         do {
-            let p12Cert = try NexusCore.TLSConfiguration.P12Certificate.fromBundle(
+            let p12Cert = try TLSConfiguration.P12Certificate.fromBundle(
                 named: named,
                 password: password
             )
 
-            self.tlsConfig = NexusCore.TLSConfiguration(
+            self.tlsConfig = TLSConfiguration(
                 enabled: true,
                 version: .automatic,
                 p12Certificate: p12Cert,
@@ -229,15 +229,15 @@ public final class TCPConnectionBuilder {
     /// 配置证书固定
     @discardableResult
     public func tlsWithPinning(certificates: [String]) -> Self {
-        var certDataArray: [NexusCore.TLSConfiguration.ValidationPolicy.CertificateData] = []
+        var certDataArray: [TLSConfiguration.ValidationPolicy.CertificateData] = []
 
         for certName in certificates {
-            if let certData = try? NexusCore.TLSConfiguration.ValidationPolicy.CertificateData.fromBundle(named: certName) {
+            if let certData = try? TLSConfiguration.ValidationPolicy.CertificateData.fromBundle(named: certName) {
                 certDataArray.append(certData)
             }
         }
 
-        self.tlsConfig = NexusCore.TLSConfiguration(
+        self.tlsConfig = TLSConfiguration(
             enabled: true,
             version: .automatic,
             p12Certificate: nil,
@@ -253,7 +253,7 @@ public final class TCPConnectionBuilder {
 
     /// 配置代理
     @discardableResult
-    public func proxy(_ config: NexusCore.ProxyConfiguration) -> Self {
+    public func proxy(_ config: ProxyConfiguration) -> Self {
         self.proxyConfig = config
         return self
     }
