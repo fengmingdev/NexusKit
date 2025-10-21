@@ -9,12 +9,18 @@
 
 import Foundation
 import Network
+#if canImport(NexusCore)
 import NexusCore
+#endif
 
 // MARK: - Type Aliases
 
 // 避免与 Network.ProxyConfiguration (iOS 17.0+) 冲突
+#if canImport(NexusCore)
 typealias NexusProxyConfiguration = NexusCore.ProxyConfiguration
+#else
+typealias NexusProxyConfiguration = ProxyConfiguration
+#endif
 
 // MARK: - TCP Connection
 
