@@ -210,7 +210,7 @@ public actor SocketIOClient {
     ///   - event: 事件名称
     ///   - items: 事件数据
     ///   - callback: 确认回调
-    public func emit(_ event: String, _ items: Any..., callback: @escaping ([Any]) async -> Void) async throws {
+    public func emit(_ event: String, _ items: Any..., callback: @escaping @Sendable ([Any]) async -> Void) async throws {
         guard isConnected else {
             throw SocketIOError.notConnected
         }
@@ -250,15 +250,12 @@ public actor SocketIOClient {
     ///   - event: 事件名称
     ///   - callback: 事件处理器
     public func once(_ event: String, callback: @escaping @Sendable ([Any]) async -> Void) {
-        var onceCallback: (@Sendable ([Any]) async -> Void)?
-        onceCallback = { [weak self] data in
+        let onceCallback: @Sendable ([Any]) async -> Void = { [weak self] data in
             await callback(data)
-            // 移除自己
-            if let event = event as String? {
-                await self?.off(event, callback: onceCallback!)
-            }
+            // 移除该事件的所有监听器
+            await self?.off(event)
         }
-        on(event, callback: onceCallback!)
+        on(event, callback: onceCallback)
     }
     
     /// 移除事件监听器

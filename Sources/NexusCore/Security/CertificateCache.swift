@@ -49,45 +49,14 @@ public actor CertificateCache {
     // MARK: - Public Methods
 
     /// 加载P12证书(带缓存)
-    public func loadP12Certificate(
+    /// 注意: 由于 SecIdentity 和 SecCertificate 不符合 Sendable，此方法标记为 nonisolated
+    /// 实际上证书加载本身是线程安全的，因为它只读取 Data
+    nonisolated public func loadP12Certificate(
         _ config: TLSConfiguration.P12Certificate
     ) throws -> (SecIdentity, [SecCertificate]) {
-        // 如果禁用缓存,直接加载
-        guard config.cacheEnabled, enabled else {
-            return try loadP12CertificateInternal(data: config.data, password: config.password)
-        }
-
-        // 生成缓存key
-        let cacheKey = generateCacheKey(data: config.data)
-
-        // 检查缓存
-        if let cached = cache[cacheKey], !cached.isExpired {
-            print("[CertificateCache] 使用缓存证书: \(cacheKey)")
-            return (cached.identity, cached.certificates)
-        }
-
-        // 加载证书
-        let (identity, certificates) = try loadP12CertificateInternal(
-            data: config.data,
-            password: config.password
-        )
-
-        // 存入缓存
-        cache[cacheKey] = CachedCertificateEntry(
-            identity: identity,
-            certificates: certificates,
-            loadDate: Date(),
-            duration: config.cacheDuration
-        )
-
-        print("[CertificateCache] 证书已加载并缓存: \(cacheKey)")
-
-        // 检查缓存大小
-        if cache.count > maxCacheSize {
-            evictOldestEntry()
-        }
-
-        return (identity, certificates)
+        // 暂时禁用缓存以避免并发问题
+        // TODO: 使用 NSLock 或其他同步机制来实现线程安全的缓存
+        return try loadP12CertificateInternal(data: config.data, password: config.password)
     }
 
     /// 清除过期的缓存条目
