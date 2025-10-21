@@ -161,7 +161,7 @@ public actor SocketIOParser {
     /// 提取事件数据
     /// - Parameter packet: Socket.IO包
     /// - Returns: 事件数据
-    public func extractEventData(from packet: SocketIOPacket) -> [Any] {
+    nonisolated public func extractEventData(from packet: SocketIOPacket) -> [Any] {
         guard packet.type == .event || packet.type == .binaryEvent else {
             return []
         }

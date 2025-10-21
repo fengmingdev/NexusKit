@@ -250,7 +250,7 @@ public actor HTTPClient {
         let port = url.port ?? (url.scheme == "https" ? 443 : 80)
         let usesTLS = url.scheme == "https"
 
-        var builder = NexusKit.shared.tcp(host: host, port: UInt16(port))
+        var builder = await NexusKit.shared.tcp(host: host, port: UInt16(port))
 
         if usesTLS {
             // 配置 TLS
