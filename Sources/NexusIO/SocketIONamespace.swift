@@ -23,7 +23,8 @@ public actor SocketIONamespace {
     private var isConnected = false
     
     /// 事件处理器映射
-    private var eventHandlers: [String: [@Sendable ([Any]) async -> Void]] = [:]
+    /// 注意: 不使用 @Sendable 因为这些闭包在 actor 内部执行，不会跨隔离域发送
+    private var eventHandlers: [String: [([Any]) async -> Void]] = [:]
     
     /// 代理（弱引用）
     private weak var delegate: (any SocketIONamespaceDelegate)?
@@ -98,7 +99,7 @@ public actor SocketIONamespace {
     /// - Parameters:
     ///   - event: 事件名称
     ///   - callback: 事件处理器
-    public func on(_ event: String, callback: @escaping @Sendable ([Any]) async -> Void) {
+    public func on(_ event: String, callback: @escaping ([Any]) async -> Void) {
         if eventHandlers[event] == nil {
             eventHandlers[event] = []
         }
@@ -138,14 +139,10 @@ public actor SocketIONamespace {
                 let eventData = await extractEventData(from: packet)
 
                 // 触发事件处理器
-                // 注意: eventData 是 [Any]，不符合 Sendable
-                // 但它是从 packet 中提取的局部数据，handlers 会立即消费它
-                // 使用 withoutActuallyEscaping 确保数据不会逃逸
+                // eventData 在 actor 内部，handlers 也在 actor 内部执行，数据不会逃逸
                 if let handlers = eventHandlers[eventName] {
-                    await withoutActuallyEscaping(eventData) { escapableData in
-                        for handler in handlers {
-                            await handler(escapableData)
-                        }
+                    for handler in handlers {
+                        await handler(eventData)
                     }
                 }
 
