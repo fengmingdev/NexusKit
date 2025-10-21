@@ -648,7 +648,7 @@ public final class TCPConnection: Connection, @unchecked Sendable {
 
         // 配置客户端证书（如果有）
         if let p12Cert = config.p12Certificate {
-            let (identity, certificates) = try certificateCache.loadP12Certificate(p12Cert)
+            let (identity, certificates) = try await certificateCache.loadP12Certificate(p12Cert)
 
             // 设置客户端证书
             var certArray: [SecCertificate] = [certificates[0]]

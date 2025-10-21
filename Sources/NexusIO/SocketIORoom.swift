@@ -87,13 +87,18 @@ public actor SocketIORoom {
     ///   - event: 事件名称
     ///   - items: 事件数据
     /// - Throws: Socket.IO错误
-    public func emit(to room: String, event: String, _ items: Any...) async throws {
+    public func emit(to room: String, event: String, _ items: [Any]) async throws {
         guard let client = client else {
             throw SocketIOError.notConnected
         }
-        
-        // Socket.IO的房间消息通过to事件发送
-        try await client.emit("to", room, event, items)
+
+        // Socket.IO的房间消息作为普通事件发送，包含room信息
+        var args: [Any] = [room, event]
+        args.append(contentsOf: items)
+
+        // 发送"to"事件，包含房间、事件和数据
+        let packet = SocketIOPacket.event("to", items: args, namespace: namespace)
+        try await client.sendPacket(packet)
     }
     
     /// 获取当前加入的房间列表

@@ -55,13 +55,13 @@ public actor SocketIOClient {
     private weak var delegate: (any SocketIOClientDelegate)?
     
     /// 事件处理器映射
-    private var eventHandlers: [String: [([Any]) async -> Void]] = [:]
-    
+    private var eventHandlers: [String: [@Sendable ([Any]) async -> Void]] = [:]
+
     /// 确认ID计数器
     private var ackId = 0
-    
+
     /// 确认回调映射
-    private var ackCallbacks: [Int: ([Any]) async -> Void] = [:]
+    private var ackCallbacks: [Int: @Sendable ([Any]) async -> Void] = [:]
     
     /// 命名空间映射
     private var namespaces: [String: SocketIONamespace] = [:]
@@ -238,7 +238,7 @@ public actor SocketIOClient {
     /// - Parameters:
     ///   - event: 事件名称
     ///   - callback: 事件处理器
-    public func on(_ event: String, callback: @escaping ([Any]) async -> Void) {
+    public func on(_ event: String, callback: @escaping @Sendable ([Any]) async -> Void) {
         if eventHandlers[event] == nil {
             eventHandlers[event] = []
         }
@@ -249,8 +249,8 @@ public actor SocketIOClient {
     /// - Parameters:
     ///   - event: 事件名称
     ///   - callback: 事件处理器
-    public func once(_ event: String, callback: @escaping ([Any]) async -> Void) {
-        var onceCallback: (([Any]) async -> Void)?
+    public func once(_ event: String, callback: @escaping @Sendable ([Any]) async -> Void) {
+        var onceCallback: (@Sendable ([Any]) async -> Void)?
         onceCallback = { [weak self] data in
             await callback(data)
             // 移除自己
@@ -265,7 +265,7 @@ public actor SocketIOClient {
     /// - Parameters:
     ///   - event: 事件名称
     ///   - callback: 要移除的处理器（可选）
-    public func off(_ event: String, callback: (([Any]) async -> Void)? = nil) {
+    public func off(_ event: String, callback: (@Sendable ([Any]) async -> Void)? = nil) {
         if callback == nil {
             // 移除所有监听器
             eventHandlers.removeValue(forKey: event)

@@ -23,7 +23,7 @@ public actor SocketIONamespace {
     private var isConnected = false
     
     /// 事件处理器映射
-    private var eventHandlers: [String: [([Any]) async -> Void]] = [:]
+    private var eventHandlers: [String: [@Sendable ([Any]) async -> Void]] = [:]
     
     /// 代理（弱引用）
     private weak var delegate: (any SocketIONamespaceDelegate)?
@@ -98,7 +98,7 @@ public actor SocketIONamespace {
     /// - Parameters:
     ///   - event: 事件名称
     ///   - callback: 事件处理器
-    public func on(_ event: String, callback: @escaping ([Any]) async -> Void) {
+    public func on(_ event: String, callback: @escaping @Sendable ([Any]) async -> Void) {
         if eventHandlers[event] == nil {
             eventHandlers[event] = []
         }
