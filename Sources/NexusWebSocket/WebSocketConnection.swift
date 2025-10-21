@@ -562,12 +562,4 @@ public struct WebSocketConfiguration: Sendable {
 }
 
 // MARK: - Connection State Extension
-
-extension ConnectionState {
-    var isReconnecting: Bool {
-        if case .reconnecting = self {
-            return true
-        }
-        return false
-    }
-}
+// isReconnecting 已在 NexusCore/Core/ConnectionState.swift 中定义
