@@ -6,7 +6,9 @@
 //
 
 import Foundation
+#if canImport(NexusCore)
 import NexusCore
+#endif
 
 // MARK: - WebSocket Connection Factory
 

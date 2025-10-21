@@ -9,7 +9,9 @@
 //
 
 import Foundation
+#if canImport(NexusCore)
 import NexusCore
+#endif
 
 // MARK: - Binary Protocol Adapter
 

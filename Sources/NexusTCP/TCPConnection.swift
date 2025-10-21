@@ -9,7 +9,9 @@
 
 import Foundation
 import Network
+#if canImport(NexusCore)
 import NexusCore
+#endif
 
 // MARK: - TCP Connection
 

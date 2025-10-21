@@ -7,8 +7,12 @@
 //  HTTP/1.1 客户端实现
 
 import Foundation
+#if canImport(NexusCore)
 import NexusCore
+#endif
+#if canImport(NexusTCP)
 import NexusTCP
+#endif
 
 // MARK: - HTTP Client
 

@@ -41,60 +41,11 @@ Pod::Spec.new do |s|
 
   s.swift_versions = ['6.0']
 
-  # Default subspec (Core only)
-  s.default_subspecs = 'Core'
+  # Source files - 包含所有核心模块
+  s.source_files = 'Sources/**/*.swift'
 
-  # MARK: - Core Module (核心网络模块)
-
-  s.subspec 'Core' do |core|
-    core.source_files = 'Sources/NexusCore/**/*.swift'
-    core.frameworks = 'Foundation', 'Network'
-  end
-
-  # MARK: - TCP Module (TCP 连接支持)
-
-  s.subspec 'TCP' do |tcp|
-    tcp.source_files = 'Sources/NexusTCP/**/*.swift'
-    tcp.dependency 'NexusKit/Core'
-    tcp.frameworks = 'Foundation', 'Network'
-  end
-
-  # MARK: - WebSocket Module (WebSocket 支持)
-
-  s.subspec 'WebSocket' do |websocket|
-    websocket.source_files = 'Sources/NexusWebSocket/**/*.swift'
-    websocket.dependency 'NexusKit/Core'
-    websocket.dependency 'NexusKit/TCP'
-    websocket.frameworks = 'Foundation'
-  end
-
-  # MARK: - IO Module (Socket.IO 支持)
-
-  s.subspec 'IO' do |io|
-    io.source_files = 'Sources/NexusIO/**/*.swift'
-    io.dependency 'NexusKit/Core'
-    io.dependency 'NexusKit/WebSocket'
-    io.frameworks = 'Foundation'
-  end
-
-  # MARK: - HTTP Module (HTTP 客户端)
-
-  s.subspec 'HTTP' do |http|
-    http.source_files = 'Sources/NexusHTTP/**/*.swift'
-    http.dependency 'NexusKit/Core'
-    http.dependency 'NexusKit/TCP'
-    http.frameworks = 'Foundation'
-  end
-
-  # MARK: - Complete Package (完整套件)
-
-  s.subspec 'Complete' do |complete|
-    complete.dependency 'NexusKit/Core'
-    complete.dependency 'NexusKit/TCP'
-    complete.dependency 'NexusKit/WebSocket'
-    complete.dependency 'NexusKit/IO'
-    complete.dependency 'NexusKit/HTTP'
-  end
+  # Frameworks
+  s.frameworks = 'Foundation', 'Network'
 
   # Test spec
   s.test_spec 'Tests' do |test_spec|

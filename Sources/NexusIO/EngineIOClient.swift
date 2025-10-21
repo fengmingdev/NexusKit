@@ -6,7 +6,9 @@
 //
 
 import Foundation
+#if canImport(NexusCore)
 import NexusCore
+#endif
 
 /// Engine.IO 客户端
 public actor EngineIOClient {
