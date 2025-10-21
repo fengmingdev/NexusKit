@@ -41,10 +41,10 @@ Pod::Spec.new do |s|
 
   s.swift_versions = ['6.0']
 
-  # Compiler flags - 降低 SocketIO 模块的并发检查级别
+  # Compiler flags - 禁用严格并发检查以兼容 SocketIO 协议
   # Socket.IO 协议使用 [Any] 类型，无法完全符合 Sendable
   s.pod_target_xcconfig = {
-    'SWIFT_STRICT_CONCURRENCY' => 'minimal'
+    'OTHER_SWIFT_FLAGS' => '$(inherited) -Xfrontend -warn-concurrency -Xfrontend -enable-actor-data-race-checks'
   }
 
   # Source files - 包含所有核心模块
