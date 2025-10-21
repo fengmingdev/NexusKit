@@ -31,7 +31,8 @@ public actor CertificateCache {
     // MARK: - Properties
 
     /// 证书缓存字典 (key: P12数据的hash)
-    private var cache: [String: CachedCertificateEntry] = [:]
+    /// 注意: 使用 nonisolated(unsafe) 因为当前禁用了缓存功能
+    nonisolated(unsafe) private var cache: [String: CachedCertificateEntry] = [:]
 
     /// 最大缓存条目数
     private let maxCacheSize: Int
@@ -103,7 +104,7 @@ public actor CertificateCache {
     // MARK: - Private Methods
 
     /// 内部加载P12证书
-    private func loadP12CertificateInternal(
+    nonisolated private func loadP12CertificateInternal(
         data: Data,
         password: String
     ) throws -> (SecIdentity, [SecCertificate]) {
@@ -148,7 +149,7 @@ public actor CertificateCache {
     }
 
     /// 生成缓存key(使用数据的SHA256 hash)
-    private func generateCacheKey(data: Data) -> String {
+    nonisolated private func generateCacheKey(data: Data) -> String {
         // 使用前1024字节计算hash以提高性能
         let hashData = data.prefix(1024)
         let hash = hashData.withUnsafeBytes { buffer in
@@ -160,7 +161,7 @@ public actor CertificateCache {
     }
 
     /// 驱逐最旧的缓存条目
-    private func evictOldestEntry() {
+    nonisolated private func evictOldestEntry() {
         guard let oldestKey = cache.min(by: {
             $0.value.loadDate < $1.value.loadDate
         })?.key else {
