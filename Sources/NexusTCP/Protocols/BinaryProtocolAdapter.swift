@@ -107,10 +107,10 @@ public final class BinaryProtocolAdapter: ProtocolAdapter, @unchecked Sendable {
         // Body
         result.append(bodyData)
 
-        // 7. 注册请求（用于响应匹配）
-        if let callback = context.metadata["callback"] as? @Sendable (Data) async -> Void {
-            requestMap.registerRequest(id: requestId, callback: callback)
-        }
+//        // 7. 注册请求（用于响应匹配）
+//        if let callback = context.metadata["callback"] as? @Sendable (Data) async -> Void {
+//            requestMap.registerRequest(id: requestId, callback: callback)
+//        }
 
         return result
     }

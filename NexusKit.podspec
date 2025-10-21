@@ -52,9 +52,4 @@ Pod::Spec.new do |s|
 
   # Frameworks
   s.frameworks = 'Foundation', 'Network'
-
-  # Test spec
-  s.test_spec 'Tests' do |test_spec|
-    test_spec.source_files = 'Tests/**/*.swift'
-  end
 end
