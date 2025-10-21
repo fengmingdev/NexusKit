@@ -139,7 +139,6 @@ public actor SocketIONamespace {
                 let eventData = await extractEventData(from: packet)
 
                 // 触发事件处理器
-                // eventData 在 actor 内部，handlers 也在 actor 内部执行，数据不会逃逸
                 if let handlers = eventHandlers[eventName] {
                     for handler in handlers {
                         await handler(eventData)
